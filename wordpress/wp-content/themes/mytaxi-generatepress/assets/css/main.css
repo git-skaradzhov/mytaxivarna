@@ -126,33 +126,40 @@ body.mytaxi a {
   display: none;
   align-items: center;
   justify-content: center;
+  box-sizing: border-box;
   width: 2.75rem;
   height: 2.75rem;
+  margin: 0;
+  padding: 0;
   border: 1px solid var(--mt-line);
   border-radius: 999px;
   background: var(--mt-surface);
   color: var(--mt-navy);
-}
-
-.mt-nav-toggle__bars,
-.mt-nav-toggle__bars::before,
-.mt-nav-toggle__bars::after {
-  display: block;
-  width: 1.05rem;
-  height: 2px;
-  background: currentColor;
-  border-radius: 2px;
-  content: "";
+  font: inherit;
+  line-height: 1;
+  appearance: none;
 }
 
 .mt-nav-toggle__bars {
   position: relative;
+  display: block;
+  flex: 0 0 1.05rem;
+  width: 1.05rem;
+  height: 2px;
+  background: currentColor;
+  border-radius: 2px;
 }
 
 .mt-nav-toggle__bars::before,
 .mt-nav-toggle__bars::after {
   position: absolute;
   left: 0;
+  display: block;
+  width: 1.05rem;
+  height: 2px;
+  background: currentColor;
+  border-radius: 2px;
+  content: "";
 }
 
 .mt-nav-toggle__bars::before {
@@ -1078,6 +1085,8 @@ body.mytaxi .site-footer {
 
   .mt-nav-toggle {
     display: inline-flex;
+    flex: 0 0 auto;
+    margin-left: auto;
   }
 
   .mt-nav {
