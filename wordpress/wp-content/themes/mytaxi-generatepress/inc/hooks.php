@@ -29,30 +29,7 @@ add_action( 'wp_footer', 'mytaxi_mobile_bar' );
  * Site header used on every public page.
  */
 function mytaxi_header() {
-	$service = mytaxi_current_service();
-	$type    = (string) ( $service['type'] ?? '' );
-	$items   = array(
-		'local'    => array(
-			'label'   => __( 'Local taxi', 'mytaxi-generatepress' ),
-			'url'     => home_url( '/#local' ),
-			'current' => 'local_taxi' === $type,
-		),
-		'airport'  => array(
-			'label'   => __( 'Airport transfers', 'mytaxi-generatepress' ),
-			'url'     => home_url( '/#transfers' ),
-			'current' => 'airport_transfer' === $type && ! is_singular( 'mytaxi_route' ),
-		),
-		'routes'   => array(
-			'label'   => __( 'Routes', 'mytaxi-generatepress' ),
-			'url'     => home_url( '/#routes' ),
-			'current' => is_singular( 'mytaxi_route' ),
-		),
-		'contact'  => array(
-			'label'   => __( 'Contact', 'mytaxi-generatepress' ),
-			'url'     => home_url( '/contact/' ),
-			'current' => is_page( 'contact' ),
-		),
-	);
+	$items = mytaxi_nav_items();
 	echo '<header class="mt-header"><div class="mt-wrap mt-header__bar">';
 	mytaxi_brand();
 	echo '<button class="mt-nav-toggle" type="button" aria-expanded="false" aria-controls="mt-nav" data-nav-toggle>';
@@ -65,6 +42,38 @@ function mytaxi_header() {
 	}
 	echo '<a class="mt-btn mt-btn--ghost" href="' . esc_url( home_url( '/contact/' ) ) . '">' . esc_html__( 'Contact us', 'mytaxi-generatepress' ) . '</a>';
 	echo '</nav></div></header>';
+}
+
+/**
+ * Primary links. Each item is its own page, including the records under it.
+ *
+ * @return array<string,array{label:string,url:string,current:bool}>
+ */
+function mytaxi_nav_items() {
+	$service = mytaxi_current_service();
+	$type    = (string) ( $service['type'] ?? '' );
+	return array(
+		'local'   => array(
+			'label'   => __( 'Local taxi', 'mytaxi-generatepress' ),
+			'url'     => home_url( '/local-taxi/' ),
+			'current' => is_page( 'local-taxi' ) || 'local_taxi' === $type,
+		),
+		'airport' => array(
+			'label'   => __( 'Airport transfers', 'mytaxi-generatepress' ),
+			'url'     => home_url( '/airport-transfers/' ),
+			'current' => is_page( 'airport-transfers' ) || ( 'airport_transfer' === $type && ! is_singular( 'mytaxi_route' ) ),
+		),
+		'routes'  => array(
+			'label'   => __( 'Routes', 'mytaxi-generatepress' ),
+			'url'     => home_url( '/routes/' ),
+			'current' => is_page( 'routes' ) || is_singular( 'mytaxi_route' ),
+		),
+		'contact' => array(
+			'label'   => __( 'Contact', 'mytaxi-generatepress' ),
+			'url'     => home_url( '/contact/' ),
+			'current' => is_page( 'contact' ),
+		),
+	);
 }
 
 /**
@@ -147,10 +156,9 @@ function mytaxi_footer() {
 	echo '<div class="mt-footer__bar">';
 	mytaxi_brand();
 	echo '<nav class="mt-footer__nav" aria-label="' . esc_attr__( 'Footer', 'mytaxi-generatepress' ) . '">';
-	echo '<a href="' . esc_url( home_url( '/#local' ) ) . '">' . esc_html__( 'Local taxi', 'mytaxi-generatepress' ) . '</a>';
-	echo '<a href="' . esc_url( home_url( '/#transfers' ) ) . '">' . esc_html__( 'Airport transfers', 'mytaxi-generatepress' ) . '</a>';
-	echo '<a href="' . esc_url( home_url( '/#routes' ) ) . '">' . esc_html__( 'Routes', 'mytaxi-generatepress' ) . '</a>';
-	echo '<a href="' . esc_url( home_url( '/contact/' ) ) . '">' . esc_html__( 'Contact', 'mytaxi-generatepress' ) . '</a>';
+	foreach ( mytaxi_nav_items() as $item ) {
+		echo '<a href="' . esc_url( $item['url'] ) . '">' . esc_html( $item['label'] ) . '</a>';
+	}
 	echo '</nav></div>';
 	if ( ! empty( $company['legal_name'] ) || ! empty( $company['address'] ) ) {
 		echo '<p class="mt-footer__note">';
@@ -189,7 +197,7 @@ function mytaxi_mobile_bar() {
 		mytaxi_icon( 'phone' );
 		echo '<span>' . esc_html__( 'Call', 'mytaxi-generatepress' ) . '</span></a>';
 	} elseif ( ! $service ) {
-		echo '<a class="mt-btn mt-btn--yellow" href="' . esc_url( home_url( '/#local' ) ) . '">';
+		echo '<a class="mt-btn mt-btn--yellow" href="' . esc_url( home_url( '/local-taxi/' ) ) . '">';
 		mytaxi_icon( 'car' );
 		echo '<span>' . esc_html__( 'Choose service', 'mytaxi-generatepress' ) . '</span></a>';
 	}
@@ -201,7 +209,7 @@ function mytaxi_mobile_bar() {
 		mytaxi_icon( 'plane' );
 		echo '<span>' . esc_html__( 'Request', 'mytaxi-generatepress' ) . '</span></a>';
 	} else {
-		echo '<a class="mt-btn mt-btn--ghost" href="' . esc_url( home_url( '/#transfers' ) ) . '">';
+		echo '<a class="mt-btn mt-btn--ghost" href="' . esc_url( home_url( '/airport-transfers/' ) ) . '">';
 		mytaxi_icon( 'plane' );
 		echo '<span>' . esc_html__( 'Transfer request', 'mytaxi-generatepress' ) . '</span></a>';
 	}

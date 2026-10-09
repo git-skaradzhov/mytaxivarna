@@ -43,6 +43,21 @@ class Setup {
 			'Contact',
 			"Choose the service you need and use the phone or request form on that page.\n\nAn online request is sent to that service only. The team confirms it with you. Sending the form does not create a booking.\n\nSample text for review."
 		);
+		self::ensure_page(
+			'local-taxi',
+			'Local taxi',
+			'Coastal taxi services around Varna. Each resort keeps its own phone.'
+		);
+		self::ensure_page(
+			'airport-transfers',
+			'Airport transfers',
+			'Transfers to and from Varna Airport and Sofia Airport. Each airport service keeps its own phone.'
+		);
+		self::ensure_page(
+			'routes',
+			'Routes',
+			'A price is shown only when it is confirmed.'
+		);
 
 		if ( ! (int) get_option( 'page_on_front' ) ) {
 			update_option( 'show_on_front', 'page' );

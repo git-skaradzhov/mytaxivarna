@@ -135,7 +135,7 @@ class Routing {
 		$base      = $original_slug ? $original_slug : $slug;
 		$candidate = $slug;
 		$index     = 2;
-		while ( self::conflicts( $candidate, (int) $post_id ) ) {
+		while ( self::conflicts( $candidate, (int) $post_id, $post_type ) ) {
 			$candidate = $base . '-' . $index;
 			++$index;
 			if ( $index > 30 ) {
@@ -159,9 +159,10 @@ class Routing {
 	 *
 	 * @param string $slug Slug.
 	 * @param int    $post_id Current post.
+	 * @param string $post_type Current type.
 	 * @return bool
 	 */
-	public static function conflicts( $slug, $post_id ) {
+	public static function conflicts( $slug, $post_id, $post_type = '' ) {
 		$slug = trim( (string) $slug, '/' );
 		if ( '' === $slug ) {
 			return true;
@@ -188,6 +189,11 @@ class Routing {
 			'wp-sitemap.xml',
 		);
 		if ( in_array( $slug, $reserved, true ) ) {
+			return true;
+		}
+
+		$pages = array( 'home', 'contact', 'local-taxi', 'airport-transfers', 'routes' );
+		if ( in_array( $slug, $pages, true ) && 'page' !== $post_type ) {
 			return true;
 		}
 

@@ -294,11 +294,14 @@ class Data {
 		);
 
 		if ( is_singular( 'mytaxi_service' ) ) {
+			$type = (string) get_post_meta( get_the_ID(), '_mytaxi_type', true );
+			self::breadcrumb_page( $trail, 'airport_transfer' === $type ? 'airport-transfers' : 'local-taxi' );
 			$trail[] = array(
 				'name' => get_the_title(),
 				'url'  => get_permalink(),
 			);
 		} elseif ( is_singular( 'mytaxi_route' ) ) {
+			self::breadcrumb_page( $trail, 'routes' );
 			$service_id = (int) get_post_meta( get_the_ID(), '_mytaxi_service_id', true );
 			if ( $service_id && 'publish' === get_post_status( $service_id ) ) {
 				$trail[] = array(
@@ -318,6 +321,23 @@ class Data {
 		}
 
 		return $trail;
+	}
+
+	/**
+	 * Add a published page to a breadcrumb trail.
+	 *
+	 * @param array<int,array{name:string,url:string}> $trail Trail.
+	 * @param string                                   $slug Page slug.
+	 */
+	private static function breadcrumb_page( array &$trail, $slug ) {
+		$page = get_page_by_path( $slug );
+		if ( ! $page || 'publish' !== $page->post_status ) {
+			return;
+		}
+		$trail[] = array(
+			'name' => get_the_title( $page ),
+			'url'  => get_permalink( $page ),
+		);
 	}
 
 	/**

@@ -23,8 +23,8 @@ $extras = class_exists( '\MyTaxi\Core\Data' ) ? \MyTaxi\Core\Data::home_extras()
 		<h1><?php esc_html_e( 'Your journey starts here.', 'mytaxi-generatepress' ); ?></h1>
 		<p class="mt-lead"><?php esc_html_e( 'Local taxi services and airport transfers, with the right team for every destination.', 'mytaxi-generatepress' ); ?></p>
 		<div class="mt-actions">
-			<a class="mt-btn mt-btn--yellow" href="#local"><?php mytaxi_icon( 'car' ); ?><span><?php esc_html_e( 'Find a local taxi', 'mytaxi-generatepress' ); ?></span><?php mytaxi_icon( 'arrow' ); ?></a>
-			<a class="mt-btn mt-btn--ghost" href="#transfers"><?php mytaxi_icon( 'plane' ); ?><span><?php esc_html_e( 'Plan an airport transfer', 'mytaxi-generatepress' ); ?></span><?php mytaxi_icon( 'arrow' ); ?></a>
+			<a class="mt-btn mt-btn--yellow" href="<?php echo esc_url( home_url( '/local-taxi/' ) ); ?>"><?php mytaxi_icon( 'car' ); ?><span><?php esc_html_e( 'Find a local taxi', 'mytaxi-generatepress' ); ?></span><?php mytaxi_icon( 'arrow' ); ?></a>
+			<a class="mt-btn mt-btn--ghost" href="<?php echo esc_url( home_url( '/airport-transfers/' ) ); ?>"><?php mytaxi_icon( 'plane' ); ?><span><?php esc_html_e( 'Plan an airport transfer', 'mytaxi-generatepress' ); ?></span><?php mytaxi_icon( 'arrow' ); ?></a>
 		</div>
 	</div>
 	<div class="mt-hero__media mt-hero__media--home">
