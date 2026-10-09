@@ -80,9 +80,15 @@ body.mytaxi a {
 }
 
 .mt-header {
-  position: relative;
+  position: sticky;
+  top: 0;
   z-index: 30;
-  background: var(--mt-bg);
+  background: rgba(247, 246, 242, 0.94);
+  backdrop-filter: blur(10px);
+}
+
+.mt-header.is-scrolled {
+  box-shadow: 0 10px 28px rgba(20, 43, 59, 0.08);
 }
 
 .mt-header__bar {
@@ -157,6 +163,18 @@ body.mytaxi a {
   top: 6px;
 }
 
+body.mt-nav-open .mt-nav-toggle__bars {
+  background: transparent;
+}
+
+body.mt-nav-open .mt-nav-toggle__bars::before {
+  transform: translateY(6px) rotate(45deg);
+}
+
+body.mt-nav-open .mt-nav-toggle__bars::after {
+  transform: translateY(-6px) rotate(-45deg);
+}
+
 .mt-nav {
   display: flex;
   align-items: center;
@@ -166,15 +184,29 @@ body.mytaxi a {
 
 .mt-nav__link,
 .mt-drop summary {
+  position: relative;
   color: var(--mt-navy);
   text-decoration: none;
   font-weight: 650;
   cursor: pointer;
 }
 
-.mt-nav__link.is-current,
+.mt-nav__link::after {
+  position: absolute;
+  right: 0;
+  bottom: -0.28rem;
+  left: 0;
+  height: 2px;
+  background: var(--mt-navy);
+  transform: scaleX(0);
+  transform-origin: left center;
+  content: "";
+}
+
+.mt-nav__link.is-current::after,
 .mt-drop summary.is-current {
-  box-shadow: inset 0 -2px 0 var(--mt-navy);
+  transform: scaleX(1);
+  box-shadow: none;
 }
 
 .mt-drop {
@@ -766,6 +798,7 @@ body.mytaxi :focus-visible {
   border-right: 2px solid currentColor;
   border-bottom: 2px solid currentColor;
   transform: rotate(45deg);
+  transition: transform 0.2s ease;
 }
 
 .mt-faq[open] summary::after {
@@ -1048,7 +1081,7 @@ body.mytaxi .site-footer {
   }
 
   .mt-nav {
-    display: none;
+    display: flex;
     position: absolute;
     top: 100%;
     left: 0;
@@ -1061,10 +1094,17 @@ body.mytaxi .site-footer {
     background: var(--mt-surface);
     border-bottom: 1px solid var(--mt-line);
     box-shadow: var(--mt-shadow);
+    visibility: hidden;
+    opacity: 0;
+    transform: translateY(-0.4rem);
+    pointer-events: none;
   }
 
   .mt-nav.is-open {
-    display: flex;
+    visibility: visible;
+    opacity: 1;
+    transform: none;
+    pointer-events: auto;
   }
 
   .mt-actions {
@@ -1104,5 +1144,119 @@ body.mytaxi .site-footer {
 
   body.mytaxi-input-focus .mt-mobile-bar {
     display: none;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .mt-header,
+  .mt-nav,
+  .mt-btn,
+  .mt-place > a,
+  .mt-route-row > a,
+  .mt-place__media img,
+  .mt-route-row__media img,
+  .mt-hero__media img,
+  .mt-more .mt-icon,
+  .mt-route-row__go .mt-icon,
+  .mt-btn .mt-icon,
+  .mt-nav__link::after,
+  .mt-nav-toggle__bars,
+  .mt-nav-toggle__bars::before,
+  .mt-nav-toggle__bars::after {
+    transition:
+      transform 0.28s cubic-bezier(0.22, 0.8, 0.2, 1),
+      box-shadow 0.28s ease,
+      border-color 0.28s ease,
+      opacity 0.22s ease,
+      visibility 0.22s ease,
+      background 0.22s ease;
+  }
+
+  .mt-nav__link:hover::after,
+  .mt-nav__link:focus-visible::after {
+    transform: scaleX(1);
+  }
+
+  .mt-btn:hover,
+  .mt-btn:focus-visible {
+    transform: translateY(-2px);
+  }
+
+  .mt-btn:active {
+    transform: translateY(0);
+  }
+
+  .mt-actions .mt-btn:hover .mt-icon:last-child,
+  .mt-band .mt-btn:hover .mt-icon:last-child,
+  .mt-place > a:hover .mt-more .mt-icon,
+  .mt-route-row > a:hover .mt-route-row__go .mt-icon {
+    transform: translateX(4px);
+  }
+
+  .mt-place > a:hover,
+  .mt-route-row > a:hover,
+  .mt-place > a:focus-visible,
+  .mt-route-row > a:focus-visible {
+    transform: translateY(-4px);
+    border-color: rgba(20, 43, 59, 0.22);
+    box-shadow: 0 18px 40px rgba(20, 43, 59, 0.1);
+  }
+
+  .mt-place > a:hover img,
+  .mt-route-row > a:hover img,
+  .mt-place > a:focus-visible img,
+  .mt-route-row > a:focus-visible img {
+    transform: scale(1.05);
+  }
+
+  .mt-hero__copy,
+  .mt-hero__media,
+  .mt-section__head,
+  .mt-place,
+  .mt-route-row,
+  .mt-band,
+  .mt-facts,
+  .mt-form-card {
+    animation: mt-rise 0.7s cubic-bezier(0.22, 0.8, 0.2, 1) both;
+  }
+
+  .mt-hero__media {
+    animation-delay: 0.08s;
+  }
+
+  .mt-place:nth-child(2),
+  .mt-route-row:nth-child(2) {
+    animation-delay: 0.06s;
+  }
+
+  .mt-place:nth-child(3),
+  .mt-route-row:nth-child(3) {
+    animation-delay: 0.12s;
+  }
+
+  .mt-place:nth-child(4),
+  .mt-route-row:nth-child(4) {
+    animation-delay: 0.18s;
+  }
+
+  .mt-place:nth-child(5),
+  .mt-route-row:nth-child(5) {
+    animation-delay: 0.24s;
+  }
+
+  .mt-band {
+    animation-delay: 0.12s;
+  }
+}
+
+@keyframes mt-rise {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
   }
 }

@@ -41,6 +41,15 @@
     });
   }
 
+  var header = document.querySelector('.mt-header');
+  if (header) {
+    var markHeader = function () {
+      header.classList.toggle('is-scrolled', window.scrollY > 8);
+    };
+    markHeader();
+    document.addEventListener('scroll', markHeader, { passive: true });
+  }
+
   document.addEventListener('submit', function (event) {
     var form = event.target;
     if (!form.classList || !form.classList.contains('mt-form')) {

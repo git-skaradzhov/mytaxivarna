@@ -11,14 +11,31 @@ mytaxi_open();
 while ( have_posts() ) :
 	the_post();
 	$groups = mytaxi_service_groups();
+	mytaxi_breadcrumbs();
+	mytaxi_page_hero(
+		__( 'Contact', 'mytaxi-generatepress' ),
+		'taxi-albena',
+		array(
+			array(
+				'label' => __( 'Local taxi', 'mytaxi-generatepress' ),
+				'url'   => home_url( '/local-taxi/' ),
+				'style' => 'yellow',
+				'icon'  => 'car',
+			),
+			array(
+				'label' => __( 'Airport transfers', 'mytaxi-generatepress' ),
+				'url'   => home_url( '/airport-transfers/' ),
+				'style' => 'ghost',
+				'icon'  => 'plane',
+			),
+		)
+	);
 	?>
-	<?php mytaxi_breadcrumbs(); ?>
-	<header class="mt-page-head">
-		<h1><?php the_title(); ?></h1>
-		<div class="mt-prose"><?php the_content(); ?></div>
-	</header>
 	<section class="mt-section" id="local">
-		<h2><?php esc_html_e( 'Local taxi', 'mytaxi-generatepress' ); ?></h2>
+		<div class="mt-section__head">
+			<h2><?php esc_html_e( 'Local taxi', 'mytaxi-generatepress' ); ?></h2>
+			<p><?php esc_html_e( 'Call the resort you are in. Each service has its own phone.', 'mytaxi-generatepress' ); ?></p>
+		</div>
 		<div class="mt-places mt-places--local">
 			<?php foreach ( $groups['local'] as $service ) : ?>
 				<?php get_template_part( 'template-parts/service-card', null, array( 'service' => $service, 'variant' => 'place' ) ); ?>
@@ -26,7 +43,10 @@ while ( have_posts() ) :
 		</div>
 	</section>
 	<section class="mt-section" id="transfers">
-		<h2><?php esc_html_e( 'Airport transfers', 'mytaxi-generatepress' ); ?></h2>
+		<div class="mt-section__head">
+			<h2><?php esc_html_e( 'Airport transfers', 'mytaxi-generatepress' ); ?></h2>
+			<p><?php esc_html_e( 'Call the airport service for that trip.', 'mytaxi-generatepress' ); ?></p>
+		</div>
 		<div class="mt-places mt-places--airport">
 			<?php foreach ( $groups['airport'] as $service ) : ?>
 				<?php get_template_part( 'template-parts/service-card', null, array( 'service' => $service, 'variant' => 'airport' ) ); ?>

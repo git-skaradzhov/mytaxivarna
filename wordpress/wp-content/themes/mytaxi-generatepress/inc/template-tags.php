@@ -67,6 +67,43 @@ function mytaxi_service_groups() {
 }
 
 /**
+ * Inner-page hero in the same composition as a service page.
+ *
+ * @param string                                    $kicker Short label above the title.
+ * @param string                                    $photo  Theme photo key.
+ * @param array<int,array{label:string,url:string,style?:string,icon?:string}> $actions Buttons.
+ */
+function mytaxi_page_hero( $kicker, $photo, array $actions = array() ) {
+	echo '<header class="mt-hero">';
+	echo '<div class="mt-hero__copy">';
+	echo '<p class="mt-kicker">' . esc_html( $kicker ) . '</p>';
+	echo '<h1>' . esc_html( get_the_title() ) . '</h1>';
+	if ( get_the_content() ) {
+		echo '<div class="mt-prose">';
+		the_content();
+		echo '</div>';
+	}
+	if ( $actions ) {
+		echo '<div class="mt-actions">';
+		foreach ( $actions as $action ) {
+			$style = $action['style'] ?? 'ghost';
+			echo '<a class="mt-btn mt-btn--' . esc_attr( $style ) . '" href="' . esc_url( $action['url'] ) . '">';
+			if ( ! empty( $action['icon'] ) ) {
+				mytaxi_icon( $action['icon'] );
+			}
+			echo '<span>' . esc_html( $action['label'] ) . '</span>';
+			mytaxi_icon( 'arrow' );
+			echo '</a>';
+		}
+		echo '</div>';
+	}
+	echo '</div>';
+	echo '<div class="mt-hero__media">';
+	mytaxi_picture( $photo, (int) get_post_thumbnail_id(), get_the_title(), true );
+	echo '</div></header>';
+}
+
+/**
  * Airport route whose destination matches a local service.
  *
  * @param array<string,mixed> $service Local service.
