@@ -1,0 +1,47 @@
+.mytaxi-admin .mytaxi-section {
+  background: #fff;
+  border: 1px solid #d8dee4;
+  border-radius: 8px;
+  margin: 16px 0;
+  padding: 8px 16px 16px;
+}
+
+.mytaxi-section h2 {
+  margin-bottom: 8px;
+}
+
+.mytaxi-field label {
+  display: inline-block;
+  margin-bottom: 4px;
+}
+
+.mytaxi-repeater-row {
+  border-top: 1px solid #d8dee4;
+  margin-top: 12px;
+  padding-top: 12px;
+}
+
+.mytaxi-gallery-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+}
+
+.mytaxi-gallery-list li {
+  position: relative;
+  list-style: none;
+}
+
+.mytaxi-gallery-list img {
+  display: block;
+  width: 96px;
+  height: 96px;
+  object-fit: cover;
+}
+
+.mytaxi-gallery-list button {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+}

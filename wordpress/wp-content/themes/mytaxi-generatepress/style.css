@@ -1,0 +1,13 @@
+/*
+Theme Name: MyTaxi GeneratePress
+Theme URI: https://mytaxivarna.com
+Description: Child theme for MyTaxi Varna. Visual layout stays here. GeneratePress remains the parent theme.
+Author: MyTaxi Varna
+Template: generatepress
+Version: 1.0.0
+Text Domain: mytaxi-generatepress
+Requires at least: 6.5
+Requires PHP: 8.1
+*/
+
+/* Project styles load from assets when they are added. The parent theme supplies the base. */

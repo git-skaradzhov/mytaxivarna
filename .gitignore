@@ -1,0 +1,10 @@
+.env
+.DS_Store
+.cache/
+*.log
+*.zip
+wordpress/wp-config.php
+wordpress/wp-content/uploads/
+wordpress/wp-content/upgrade/
+wordpress/wp-content/cache/
+wordpress/wp-content/debug.log

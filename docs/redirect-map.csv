@@ -1,0 +1,31 @@
+old_url,new_url,redirect_type,reason,verification_status
+https://taxialbena.com/,https://mytaxivarna.com/taxi-albena/,301,Old domain opens Taxi Albena directly,prepared_not_activated
+http://taxialbena.com/,https://mytaxivarna.com/taxi-albena/,301,HTTP goes directly to the final URL,prepared_not_activated
+https://www.taxialbena.com/,https://mytaxivarna.com/taxi-albena/,301,www goes directly to the final URL,prepared_not_activated
+http://www.taxialbena.com/,https://mytaxivarna.com/taxi-albena/,301,www HTTP goes directly to the final URL,prepared_not_activated
+https://taxikranevo.com/,https://mytaxivarna.com/taxi-kranevo/,301,Old domain opens Taxi Kranevo directly,prepared_not_activated
+http://taxikranevo.com/,https://mytaxivarna.com/taxi-kranevo/,301,HTTP goes directly to the final URL,prepared_not_activated
+https://www.taxikranevo.com/,https://mytaxivarna.com/taxi-kranevo/,301,www goes directly to the final URL,prepared_not_activated
+http://www.taxikranevo.com/,https://mytaxivarna.com/taxi-kranevo/,301,www HTTP goes directly to the final URL,prepared_not_activated
+https://airporttaxitransfersvarna.com/,https://mytaxivarna.com/varna-airport-transfers/,301,Old domain opens Varna Airport Transfers directly,prepared_not_activated
+http://airporttaxitransfersvarna.com/,https://mytaxivarna.com/varna-airport-transfers/,301,HTTP goes directly to the final URL,prepared_not_activated
+https://www.airporttaxitransfersvarna.com/,https://mytaxivarna.com/varna-airport-transfers/,301,www goes directly to the final URL,prepared_not_activated
+http://www.airporttaxitransfersvarna.com/,https://mytaxivarna.com/varna-airport-transfers/,301,www HTTP goes directly to the final URL,prepared_not_activated
+https://mytaxivarna.com/golden-sands,https://mytaxivarna.com/taxi-golden-sands/,301,Legacy resort path,active_on_new_site
+https://mytaxivarna.com/albena,https://mytaxivarna.com/taxi-albena/,301,Legacy resort path,active_on_new_site
+https://mytaxivarna.com/kranevo,https://mytaxivarna.com/taxi-kranevo/,301,Legacy resort path,active_on_new_site
+https://mytaxivarna.com/destinations/varna-to-golden-sands,https://mytaxivarna.com/varna-airport-to-golden-sands/,301,Legacy airport route,active_on_new_site
+https://mytaxivarna.com/destinations/varna-to-albena,https://mytaxivarna.com/varna-airport-to-albena/,301,Legacy airport route,active_on_new_site
+https://mytaxivarna.com/destinations/varna-to-kranevo,https://mytaxivarna.com/varna-airport-to-kranevo/,301,Legacy airport route,active_on_new_site
+https://mytaxivarna.com/destinations/varna-to-balchik,https://mytaxivarna.com/varna-airport-to-balchik/,301,Legacy airport route,active_on_new_site
+https://airporttaxitransfersvarna.com/destinations/varna-to-golden-sands,https://mytaxivarna.com/varna-airport-to-golden-sands/,301,Old host route goes directly to the final route,prepared_not_activated
+https://airporttaxitransfersvarna.com/destinations/varna-to-albena,https://mytaxivarna.com/varna-airport-to-albena/,301,Old host route goes directly to the final route,prepared_not_activated
+https://airporttaxitransfersvarna.com/destinations/varna-to-kranevo,https://mytaxivarna.com/varna-airport-to-kranevo/,301,Old host route goes directly to the final route,prepared_not_activated
+https://airporttaxitransfersvarna.com/destinations/varna-to-balchik,https://mytaxivarna.com/varna-airport-to-balchik/,301,Old host route goes directly to the final route,prepared_not_activated
+https://airporttaxitransfersvarna.com/destinations/varna-to-sunny-beach,,0,Outside the five contracted route pages,decision_required
+https://airporttaxitransfersvarna.com/destinations/varna-to-burgas,,0,Outside the five contracted route pages,decision_required
+https://airporttaxitransfersvarna.com/destinations/varna-to-bucharest,,0,Outside the five contracted route pages,decision_required
+https://mytaxivarna.com/balchik,,0,Do not send the general Balchik URL to the airport route,decision_required
+https://mytaxivarna.com/blog,,0,Keep or migrate posts only after the old content is available,decision_required
+https://mytaxivarna.com/take-taxi,,0,Old order path; target not confirmed,decision_required
+https://mytaxivarna.com/contact,https://mytaxivarna.com/contact/,0,Same path remains; WordPress handles the trailing slash,retained
