@@ -24,6 +24,20 @@ add_action(
 add_action( 'generate_header', 'mytaxi_header' );
 add_action( 'generate_footer', 'mytaxi_footer' );
 add_action( 'wp_footer', 'mytaxi_mobile_bar' );
+add_filter( 'body_class', 'mytaxi_body_class' );
+
+/**
+ * Mark pages that show the sticky service bar.
+ *
+ * @param string[] $classes Classes.
+ * @return string[]
+ */
+function mytaxi_body_class( $classes ) {
+	if ( is_singular( array( 'mytaxi_service', 'mytaxi_route' ) ) ) {
+		$classes[] = 'mt-has-bar';
+	}
+	return $classes;
+}
 
 /**
  * Site header used on every public page.
@@ -37,10 +51,14 @@ function mytaxi_header() {
 	echo '<span class="screen-reader-text">' . esc_html__( 'Menu', 'mytaxi-generatepress' ) . '</span>';
 	echo '</button>';
 	echo '<nav id="mt-nav" class="mt-nav" data-nav aria-label="' . esc_attr__( 'Primary', 'mytaxi-generatepress' ) . '">';
-	foreach ( $items as $item ) {
+	foreach ( $items as $key => $item ) {
+		if ( 'contact' === $key ) {
+			continue;
+		}
 		echo '<a class="mt-nav__link' . ( $item['current'] ? ' is-current' : '' ) . '" href="' . esc_url( $item['url'] ) . '">' . esc_html( $item['label'] ) . '</a>';
 	}
-	echo '<a class="mt-btn mt-btn--ghost" href="' . esc_url( home_url( '/contact/' ) ) . '">' . esc_html__( 'Contact us', 'mytaxi-generatepress' ) . '</a>';
+	$contact = $items['contact'];
+	echo '<a class="mt-btn mt-btn--ghost' . ( $contact['current'] ? ' is-current' : '' ) . '" href="' . esc_url( $contact['url'] ) . '">' . esc_html__( 'Contact us', 'mytaxi-generatepress' ) . '</a>';
 	echo '</nav></div></header>';
 }
 
@@ -150,7 +168,6 @@ function mytaxi_nav_routes( array $routes ) {
  * Footer built from the same service and route records.
  */
 function mytaxi_footer() {
-	$groups  = mytaxi_service_groups();
 	$company = class_exists( '\MyTaxi\Core\Data' ) ? \MyTaxi\Core\Data::company() : array();
 	echo '<div class="mt-footer"><div class="mt-wrap">';
 	echo '<div class="mt-footer__bar">';
@@ -165,16 +182,12 @@ function mytaxi_footer() {
 		echo esc_html( trim( ( $company['legal_name'] ?? '' ) . ( ! empty( $company['address'] ) ? ' · ' . $company['address'] : '' ) ) );
 		echo '</p>';
 	}
-	echo '<ul class="mt-footer__phones">';
-	foreach ( array_merge( $groups['local'], $groups['airport'] ) as $service ) {
-		echo '<li><a href="' . esc_url( $service['url'] ) . '">' . esc_html( mytaxi_place_name( $service['title'] ) ) . '</a>';
-		if ( ! empty( $service['contacts']['phone_href'] ) ) {
-			echo ' <a href="' . esc_url( $service['contacts']['phone_href'] ) . '">' . esc_html( mytaxi_phone_text( $service['contacts']['phone'] ) ) . '</a>';
-		}
-		echo '</li>';
-	}
-	echo '</ul>';
-	echo '<p class="mt-credits">';
+	echo '<p class="mt-legal">';
+	echo '<a href="' . esc_url( home_url( '/privacy-policy/' ) ) . '">' . esc_html__( 'Privacy policy', 'mytaxi-generatepress' ) . '</a>';
+	echo '<a href="' . esc_url( home_url( '/terms/' ) ) . '">' . esc_html__( 'Terms', 'mytaxi-generatepress' ) . '</a>';
+	echo '<a href="#photo-credits">' . esc_html__( 'Photo credits', 'mytaxi-generatepress' ) . '</a>';
+	echo '</p>';
+	echo '<p class="mt-credits" id="photo-credits">';
 	$credits = array();
 	foreach ( mytaxi_photo_credits() as $credit ) {
 		$credits[] = '<a href="' . esc_url( $credit['url'] ) . '">' . esc_html( $credit['label'] . ', ' . $credit['author'] . ', ' . $credit['license'] ) . '</a>';
@@ -187,7 +200,7 @@ function mytaxi_footer() {
  * Fixed mobile actions. The homepage does not borrow a service phone.
  */
 function mytaxi_mobile_bar() {
-	if ( is_admin() ) {
+	if ( is_admin() || ! is_singular( array( 'mytaxi_service', 'mytaxi_route' ) ) ) {
 		return;
 	}
 	$service = mytaxi_current_service();
@@ -196,22 +209,10 @@ function mytaxi_mobile_bar() {
 		echo '<a class="mt-btn mt-btn--yellow" href="' . esc_url( $service['contacts']['phone_href'] ) . '">';
 		mytaxi_icon( 'phone' );
 		echo '<span>' . esc_html__( 'Call', 'mytaxi-generatepress' ) . '</span></a>';
-	} elseif ( ! $service ) {
-		echo '<a class="mt-btn mt-btn--yellow" href="' . esc_url( home_url( '/local-taxi/' ) ) . '">';
-		mytaxi_icon( 'car' );
-		echo '<span>' . esc_html__( 'Choose service', 'mytaxi-generatepress' ) . '</span></a>';
 	}
 	if ( $service && ! empty( $service['contacts']['whatsapp_url'] ) ) {
 		echo '<a class="mt-btn mt-btn--ghost" href="' . esc_url( $service['contacts']['whatsapp_url'] ) . '">WhatsApp</a>';
 	}
-	if ( $service ) {
-		echo '<a class="mt-btn mt-btn--ghost" href="#request">';
-		mytaxi_icon( 'plane' );
-		echo '<span>' . esc_html__( 'Request', 'mytaxi-generatepress' ) . '</span></a>';
-	} else {
-		echo '<a class="mt-btn mt-btn--ghost" href="' . esc_url( home_url( '/airport-transfers/' ) ) . '">';
-		mytaxi_icon( 'plane' );
-		echo '<span>' . esc_html__( 'Transfer request', 'mytaxi-generatepress' ) . '</span></a>';
-	}
+	echo '<a class="mt-btn mt-btn--ghost" href="#request"><span>' . esc_html__( 'Request', 'mytaxi-generatepress' ) . '</span></a>';
 	echo '</div>';
 }

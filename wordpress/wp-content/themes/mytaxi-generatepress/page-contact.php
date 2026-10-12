@@ -12,44 +12,15 @@ while ( have_posts() ) :
 	the_post();
 	$groups = mytaxi_service_groups();
 	mytaxi_breadcrumbs();
-	mytaxi_page_hero(
-		__( 'Contact', 'mytaxi-generatepress' ),
-		'taxi-albena',
-		array(
-			array(
-				'label' => __( 'Local taxi', 'mytaxi-generatepress' ),
-				'url'   => home_url( '/local-taxi/' ),
-				'style' => 'yellow',
-				'icon'  => 'car',
-			),
-			array(
-				'label' => __( 'Airport transfers', 'mytaxi-generatepress' ),
-				'url'   => home_url( '/airport-transfers/' ),
-				'style' => 'ghost',
-				'icon'  => 'plane',
-			),
-		)
-	);
+	mytaxi_page_hero( __( 'Contact', 'mytaxi-generatepress' ), 'taxi-albena' );
 	?>
-	<section class="mt-section" id="local">
+	<section class="mt-section" id="details">
 		<div class="mt-section__head">
-			<h2><?php esc_html_e( 'Local taxi', 'mytaxi-generatepress' ); ?></h2>
-			<p><?php esc_html_e( 'Call the resort you are in. Each service has its own phone.', 'mytaxi-generatepress' ); ?></p>
+			<h2><?php echo esc_html( mytaxi_line( 'contact_local_heading' ) ); ?></h2>
 		</div>
-		<div class="mt-places mt-places--local">
-			<?php foreach ( $groups['local'] as $service ) : ?>
-				<?php get_template_part( 'template-parts/service-card', null, array( 'service' => $service, 'variant' => 'place' ) ); ?>
-			<?php endforeach; ?>
-		</div>
-	</section>
-	<section class="mt-section" id="transfers">
-		<div class="mt-section__head">
-			<h2><?php esc_html_e( 'Airport transfers', 'mytaxi-generatepress' ); ?></h2>
-			<p><?php esc_html_e( 'Call the airport service for that trip.', 'mytaxi-generatepress' ); ?></p>
-		</div>
-		<div class="mt-places mt-places--airport">
-			<?php foreach ( $groups['airport'] as $service ) : ?>
-				<?php get_template_part( 'template-parts/service-card', null, array( 'service' => $service, 'variant' => 'airport' ) ); ?>
+		<div class="mt-contacts">
+			<?php foreach ( array_merge( $groups['local'], $groups['airport'] ) as $service ) : ?>
+				<?php get_template_part( 'template-parts/contact-card', null, array( 'service' => $service ) ); ?>
 			<?php endforeach; ?>
 		</div>
 	</section>

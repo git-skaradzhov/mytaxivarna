@@ -19,12 +19,12 @@ $extras = class_exists( '\MyTaxi\Core\Data' ) ? \MyTaxi\Core\Data::home_extras()
 ?>
 <section class="mt-hero">
 	<div class="mt-hero__copy">
-		<p class="mt-kicker"><?php esc_html_e( 'Taxi & airport transfers', 'mytaxi-generatepress' ); ?></p>
-		<h1><?php esc_html_e( 'Your journey starts here.', 'mytaxi-generatepress' ); ?></h1>
-		<p class="mt-lead"><?php esc_html_e( 'Local taxi services and airport transfers, with the right team for every destination.', 'mytaxi-generatepress' ); ?></p>
+		<p class="mt-kicker"><?php echo esc_html( mytaxi_line( 'home_kicker' ) ); ?></p>
+		<h1><?php echo esc_html( mytaxi_line( 'home_title' ) ); ?></h1>
+		<p class="mt-lead"><?php echo esc_html( mytaxi_line( 'home_lead' ) ); ?></p>
 		<div class="mt-actions">
-			<a class="mt-btn mt-btn--yellow" href="<?php echo esc_url( home_url( '/local-taxi/' ) ); ?>"><?php mytaxi_icon( 'car' ); ?><span><?php esc_html_e( 'Find a local taxi', 'mytaxi-generatepress' ); ?></span><?php mytaxi_icon( 'arrow' ); ?></a>
-			<a class="mt-btn mt-btn--ghost" href="<?php echo esc_url( home_url( '/airport-transfers/' ) ); ?>"><?php mytaxi_icon( 'plane' ); ?><span><?php esc_html_e( 'Plan an airport transfer', 'mytaxi-generatepress' ); ?></span><?php mytaxi_icon( 'arrow' ); ?></a>
+			<a class="mt-btn mt-btn--yellow" href="<?php echo esc_url( home_url( '/local-taxi/' ) ); ?>"><?php mytaxi_icon( 'car' ); ?><span><?php echo esc_html( mytaxi_line( 'home_local_button' ) ); ?></span><?php mytaxi_icon( 'arrow' ); ?></a>
+			<a class="mt-btn mt-btn--ghost" href="<?php echo esc_url( home_url( '/airport-transfers/' ) ); ?>"><?php mytaxi_icon( 'plane' ); ?><span><?php echo esc_html( mytaxi_line( 'home_airport_button' ) ); ?></span><?php mytaxi_icon( 'arrow' ); ?></a>
 		</div>
 	</div>
 	<div class="mt-hero__media mt-hero__media--home">
@@ -34,8 +34,8 @@ $extras = class_exists( '\MyTaxi\Core\Data' ) ? \MyTaxi\Core\Data::home_extras()
 
 <section class="mt-section" id="local">
 	<div class="mt-section__head">
-		<h2><?php esc_html_e( 'Local taxi', 'mytaxi-generatepress' ); ?></h2>
-		<p><?php esc_html_e( 'Popular coastal destinations around Varna.', 'mytaxi-generatepress' ); ?></p>
+		<h2><?php echo esc_html( mytaxi_line( 'home_local_heading' ) ); ?></h2>
+		<p><?php echo esc_html( mytaxi_line( 'home_local_text' ) ); ?></p>
 	</div>
 	<div class="mt-places mt-places--local">
 		<?php foreach ( $groups['local'] as $service ) : ?>
@@ -46,8 +46,8 @@ $extras = class_exists( '\MyTaxi\Core\Data' ) ? \MyTaxi\Core\Data::home_extras()
 
 <section class="mt-section" id="transfers">
 	<div class="mt-section__head">
-		<h2><?php esc_html_e( 'Airport transfers', 'mytaxi-generatepress' ); ?></h2>
-		<p><?php esc_html_e( 'Transfers to and from Varna Airport and Sofia Airport.', 'mytaxi-generatepress' ); ?></p>
+		<h2><?php echo esc_html( mytaxi_line( 'home_airport_heading' ) ); ?></h2>
+		<p><?php echo esc_html( mytaxi_line( 'home_airport_text' ) ); ?></p>
 	</div>
 	<div class="mt-places mt-places--airport">
 		<?php foreach ( $groups['airport'] as $service ) : ?>
@@ -59,8 +59,10 @@ $extras = class_exists( '\MyTaxi\Core\Data' ) ? \MyTaxi\Core\Data::home_extras()
 <?php if ( $routes ) : ?>
 	<section class="mt-section" id="routes">
 		<div class="mt-section__head">
-			<h2><?php esc_html_e( 'Popular airport routes', 'mytaxi-generatepress' ); ?></h2>
-			<p><?php esc_html_e( 'A price is shown only when it is confirmed.', 'mytaxi-generatepress' ); ?></p>
+			<h2><?php echo esc_html( mytaxi_line( 'home_routes_heading' ) ); ?></h2>
+			<?php if ( '' !== mytaxi_line( 'home_routes_text' ) ) : ?>
+				<p><?php echo esc_html( mytaxi_line( 'home_routes_text' ) ); ?></p>
+			<?php endif; ?>
 		</div>
 		<div class="mt-route-list">
 			<?php foreach ( $routes as $route ) : ?>
@@ -116,12 +118,12 @@ $extras = class_exists( '\MyTaxi\Core\Data' ) ? \MyTaxi\Core\Data::home_extras()
 
 <?php mytaxi_faqs( $extras['faqs'] ); ?>
 
-<section class="mt-band">
+<section class="mt-band mt-band--cta">
 	<div>
-		<h2><?php esc_html_e( 'Need a taxi or an airport transfer?', 'mytaxi-generatepress' ); ?></h2>
-		<p><?php esc_html_e( 'Choose the service for the trip. Each one keeps its own phone.', 'mytaxi-generatepress' ); ?></p>
+		<h2><?php echo esc_html( mytaxi_line( 'home_cta_heading' ) ); ?></h2>
+		<p><?php echo esc_html( mytaxi_line( 'home_cta_text' ) ); ?></p>
 	</div>
-	<a class="mt-btn mt-btn--yellow" href="<?php echo esc_url( home_url( '/contact/' ) ); ?>"><span><?php esc_html_e( 'Contact us', 'mytaxi-generatepress' ); ?></span><?php mytaxi_icon( 'arrow' ); ?></a>
+	<a class="mt-btn mt-btn--yellow" href="<?php echo esc_url( home_url( '/contact/' ) ); ?>"><span><?php echo esc_html( mytaxi_line( 'home_cta_button' ) ); ?></span><?php mytaxi_icon( 'arrow' ); ?></a>
 </section>
 <?php if ( get_the_content() ) : ?>
 	<section class="mt-section mt-prose">

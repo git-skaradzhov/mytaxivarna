@@ -38,7 +38,7 @@ class Data {
 			)
 		);
 
-		return array_map( array( __CLASS__, 'service' ), $posts );
+		return array_map( array( __CLASS__, 'service' ), self::without_hidden( $posts ) );
 	}
 
 	/**
@@ -65,7 +65,7 @@ class Data {
 			)
 		);
 
-		return array_map( array( __CLASS__, 'route' ), $posts );
+		return array_map( array( __CLASS__, 'route' ), self::without_hidden( $posts ) );
 	}
 
 	/**
@@ -338,6 +338,85 @@ class Data {
 			'name' => get_the_title( $page ),
 			'url'  => get_permalink( $page ),
 		);
+	}
+
+	/**
+	 * Drop services, and routes of those services, that are hidden from the main lists.
+	 *
+	 * @param array<int,\WP_Post> $posts Posts.
+	 * @return array<int,\WP_Post>
+	 */
+	private static function without_hidden( array $posts ) {
+		return array_values(
+			array_filter(
+				$posts,
+				static function ( $post ) {
+					$service_id = 'mytaxi_service' === $post->post_type ? (int) $post->ID : (int) get_post_meta( $post->ID, '_mytaxi_service_id', true );
+					return '1' !== (string) get_post_meta( $service_id, '_mytaxi_list_hidden', true );
+				}
+			)
+		);
+	}
+
+	/**
+	 * Editable public lines. Empty saved values keep the default.
+	 *
+	 * @return array<string,string>
+	 */
+	public static function lines() {
+		$defaults = array(
+			'home_kicker'          => 'Taxi & airport transfers',
+			'home_title'           => 'Local taxis & airport transfers in Varna',
+			'home_lead'            => 'Choose a local taxi for your resort or arrange a transfer to your destination.',
+			'home_local_button'    => 'Find a local taxi',
+			'home_airport_button'  => 'Airport transfers',
+			'home_local_heading'   => 'Local taxi',
+			'home_local_text'      => 'Choose the destination for your journey.',
+			'home_airport_heading' => 'Airport transfers',
+			'home_airport_text'    => 'Find the service for your airport.',
+			'home_routes_heading'  => 'Popular airport routes',
+			'home_routes_text'     => '',
+			'home_cta_heading'     => 'Need help with your journey?',
+			'home_cta_text'        => 'Choose your service and contact the right team.',
+			'home_cta_button'      => 'Contact us',
+			'local_heading'        => 'Choose your service',
+			'local_text'           => '',
+			'local_cta_heading'    => 'Have a journey in mind?',
+			'local_cta_text'       => 'Contact the service for your pickup location.',
+			'airport_heading'      => 'Choose your service',
+			'airport_text'         => '',
+			'airport_cta_heading'  => 'Have a journey in mind?',
+			'airport_cta_text'     => 'Contact the service for your pickup location.',
+			'routes_heading'       => 'Choose a route',
+			'routes_text'          => '',
+			'routes_cta_heading'   => 'Have a journey in mind?',
+			'routes_cta_text'      => 'Contact the service for your pickup location.',
+			'contact_local_heading'   => 'Contact details',
+			'contact_local_text'      => '',
+			'contact_airport_heading' => 'Airport transfers',
+			'contact_airport_text'    => '',
+		);
+		$saved = get_option( 'mytaxi_public_copy', array() );
+		if ( ! is_array( $saved ) ) {
+			return $defaults;
+		}
+		foreach ( $defaults as $key => $value ) {
+			if ( isset( $saved[ $key ] ) && '' !== trim( (string) $saved[ $key ] ) ) {
+				$defaults[ $key ] = (string) $saved[ $key ];
+			}
+		}
+		return $defaults;
+	}
+
+	/**
+	 * One editable public line.
+	 *
+	 * @param string $key Line key.
+	 * @return string
+	 */
+	public static function line( $key ) {
+		$lines = self::lines();
+		return (string) ( $lines[ $key ] ?? '' );
 	}
 
 	/**

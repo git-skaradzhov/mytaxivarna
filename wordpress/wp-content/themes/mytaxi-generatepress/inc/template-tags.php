@@ -302,7 +302,10 @@ function mytaxi_place_name( $title ) {
  * @return string
  */
 function mytaxi_card_text( $text ) {
-	$text = mytaxi_strip_review_notes( $text );
+	$text = trim( mytaxi_strip_review_notes( $text ) );
+	if ( strlen( $text ) <= 120 ) {
+		return $text;
+	}
 	$parts = preg_split( '/(?<=[.!?])\s+/', $text );
 	$line  = trim( (string) ( $parts[0] ?? '' ) );
 	if ( strlen( $line ) > 120 ) {
@@ -403,6 +406,19 @@ function mytaxi_image( $attachment_id, $size, $fallback_alt, $eager = false ) {
 		$attr['fetchpriority'] = 'high';
 	}
 	echo wp_get_attachment_image( $attachment_id, $size, false, $attr );
+}
+
+/**
+ * Editable public line.
+ *
+ * @param string $key Line key.
+ * @return string
+ */
+function mytaxi_line( $key ) {
+	if ( ! class_exists( '\MyTaxi\Core\Data' ) ) {
+		return '';
+	}
+	return \MyTaxi\Core\Data::line( $key );
 }
 
 /**

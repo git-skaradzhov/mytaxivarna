@@ -15,7 +15,7 @@ if ( ! $service ) {
 	return;
 }
 $line  = mytaxi_card_text( $service['intro'] ?? '' );
-$more  = 'airport' === $variant ? __( 'Explore transfers', 'mytaxi-generatepress' ) : __( 'View service', 'mytaxi-generatepress' );
+$more  = __( 'View service', 'mytaxi-generatepress' );
 ?>
 <article class="mt-place mt-place--<?php echo esc_attr( $variant ); ?>">
 	<a href="<?php echo esc_url( $service['url'] ); ?>">

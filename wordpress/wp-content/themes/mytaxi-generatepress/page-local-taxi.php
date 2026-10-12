@@ -13,27 +13,23 @@ while ( have_posts() ) :
 	$groups = mytaxi_service_groups();
 	mytaxi_breadcrumbs();
 	mytaxi_page_hero(
-		__( 'Coastal taxi', 'mytaxi-generatepress' ),
+		__( 'Our services', 'mytaxi-generatepress' ),
 		'home',
 		array(
 			array(
-				'label' => __( 'Contact us', 'mytaxi-generatepress' ),
-				'url'   => home_url( '/contact/' ),
+				'label' => __( 'Choose a destination', 'mytaxi-generatepress' ),
+				'url'   => '#services',
 				'style' => 'yellow',
-			),
-			array(
-				'label' => __( 'Airport transfers', 'mytaxi-generatepress' ),
-				'url'   => home_url( '/airport-transfers/' ),
-				'style' => 'ghost',
-				'icon'  => 'plane',
 			),
 		)
 	);
 	?>
-	<section class="mt-section">
+	<section class="mt-section" id="services">
 		<div class="mt-section__head">
-			<h2><?php esc_html_e( 'Choose a destination', 'mytaxi-generatepress' ); ?></h2>
-			<p><?php esc_html_e( 'Each resort keeps its own phone.', 'mytaxi-generatepress' ); ?></p>
+			<h2><?php echo esc_html( mytaxi_line( 'local_heading' ) ); ?></h2>
+			<?php if ( '' !== mytaxi_line( 'local_text' ) ) : ?>
+				<p><?php echo esc_html( mytaxi_line( 'local_text' ) ); ?></p>
+			<?php endif; ?>
 		</div>
 		<div class="mt-places mt-places--local">
 			<?php foreach ( $groups['local'] as $service ) : ?>
@@ -41,12 +37,12 @@ while ( have_posts() ) :
 			<?php endforeach; ?>
 		</div>
 	</section>
-	<section class="mt-band">
+	<section class="mt-band mt-band--cta">
 		<div>
-			<h2><?php esc_html_e( 'Need an airport transfer?', 'mytaxi-generatepress' ); ?></h2>
-			<p><?php esc_html_e( 'Varna Airport and Sofia Airport are separate services, each with its own phone.', 'mytaxi-generatepress' ); ?></p>
+			<h2><?php echo esc_html( mytaxi_line( 'local_cta_heading' ) ); ?></h2>
+			<p><?php echo esc_html( mytaxi_line( 'local_cta_text' ) ); ?></p>
 		</div>
-		<a class="mt-btn mt-btn--yellow" href="<?php echo esc_url( home_url( '/airport-transfers/' ) ); ?>"><?php mytaxi_icon( 'plane' ); ?><span><?php esc_html_e( 'Airport transfers', 'mytaxi-generatepress' ); ?></span><?php mytaxi_icon( 'arrow' ); ?></a>
+		<a class="mt-btn mt-btn--yellow" href="<?php echo esc_url( home_url( '/contact/' ) ); ?>"><span><?php esc_html_e( 'Contact us', 'mytaxi-generatepress' ); ?></span><?php mytaxi_icon( 'arrow' ); ?></a>
 	</section>
 	<?php
 endwhile;

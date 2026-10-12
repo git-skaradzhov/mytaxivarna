@@ -27,6 +27,7 @@ require_once MYTAXI_CORE_DIR . 'includes/class-routing.php';
 require_once MYTAXI_CORE_DIR . 'includes/class-meta.php';
 require_once MYTAXI_CORE_DIR . 'includes/class-admin.php';
 require_once MYTAXI_CORE_DIR . 'includes/class-forms.php';
+require_once MYTAXI_CORE_DIR . 'includes/class-contact-form.php';
 require_once MYTAXI_CORE_DIR . 'includes/class-seo.php';
 require_once MYTAXI_CORE_DIR . 'includes/class-setup.php';
 require_once MYTAXI_CORE_DIR . 'includes/class-plugin.php';

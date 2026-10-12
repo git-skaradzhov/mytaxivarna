@@ -20,6 +20,25 @@ class Forms {
 	public static function boot() {
 		add_action( 'admin_post_nopriv_mytaxi_inquiry', array( __CLASS__, 'handle' ) );
 		add_action( 'admin_post_mytaxi_inquiry', array( __CLASS__, 'handle' ) );
+		add_action( 'wp_ajax_nopriv_mytaxi_form_token', array( __CLASS__, 'ajax_token' ) );
+		add_action( 'wp_ajax_mytaxi_form_token', array( __CLASS__, 'ajax_token' ) );
+	}
+
+	/**
+	 * Fresh token for one visitor. The response is not cacheable, so a cached page does not share it.
+	 */
+	public static function ajax_token() {
+		if ( ! self::allow_rate( 'mytaxi_tok_rl_', 40 ) ) {
+			wp_send_json_error( array( 'code' => 'rate_limited' ), 429 );
+		}
+		nocache_headers();
+		header( 'Cache-Control: no-store, private, max-age=0' );
+		wp_send_json_success(
+			array(
+				'token'   => self::issue_token(),
+				'started' => time(),
+			)
+		);
 	}
 
 	/**
@@ -75,8 +94,8 @@ class Forms {
 			'route'        => $route,
 			'type'         => (string) ( $service['type'] ?? 'local_taxi' ),
 			'can_send'     => ! empty( $service['contacts']['email'] ),
-			'token'        => self::issue_token(),
-			'started'      => time(),
+			'token'        => '',
+			'started'      => '',
 			'ok'           => ! empty( $result['ok'] ),
 			'code'         => (string) $result['code'],
 			'errors'       => is_array( $result['errors'] ) ? $result['errors'] : array(),
@@ -115,7 +134,7 @@ class Forms {
 			'datetime_invalid'    => __( 'Enter a valid date and time in the Europe/Sofia timezone.', 'mytaxi-core' ),
 			'passengers_required' => __( 'Enter the number of passengers.', 'mytaxi-core' ),
 			'passengers_invalid'  => __( 'Enter a passenger count from 1 to 16.', 'mytaxi-core' ),
-			'no_recipient'        => __( 'Online requests are not available for this service because no request email is set.', 'mytaxi-core' ),
+			'no_recipient'        => __( 'Call this service to request a car.', 'mytaxi-core' ),
 			'service_invalid'     => __( 'This service is not available.', 'mytaxi-core' ),
 			'route_invalid'       => __( 'This route is not available.', 'mytaxi-core' ),
 			'rate_limited'        => __( 'Too many requests were sent. Please wait and try again, or call the service.', 'mytaxi-core' ),
@@ -123,7 +142,7 @@ class Forms {
 			'token'               => __( 'The form expired. Please submit it again.', 'mytaxi-core' ),
 			'mail_failed'         => __( 'The request was not sent. Please call the service or try again later.', 'mytaxi-core' ),
 			'mail_from'           => __( 'The request was not sent because the site mail sender is not configured.', 'mytaxi-core' ),
-			'sent'                => __( 'Your request has been sent to the team. They still need to confirm it with you. This is not a confirmed booking.', 'mytaxi-core' ),
+			'sent'                => __( 'Your request has been sent. We’ll confirm availability and your quote before your journey.', 'mytaxi-core' ),
 		);
 		return $messages[ $code ] ?? $messages['rejected'];
 	}
@@ -195,11 +214,6 @@ class Forms {
 			return $fail( 'rejected' );
 		}
 
-		$nonce = (string) ( $input['mytaxi_nonce'] ?? '' );
-		if ( ! wp_verify_nonce( $nonce, 'mytaxi_inquiry' ) ) {
-			return $fail( 'token' );
-		}
-
 		$service_id = absint( $input['mytaxi_service_id'] ?? 0 );
 		$route_id   = absint( $input['mytaxi_route_id'] ?? 0 );
 		$service    = get_post( $service_id );
@@ -268,14 +282,14 @@ class Forms {
 	 *
 	 * @return bool
 	 */
-	private static function allow_rate() {
+	private static function allow_rate( $prefix = 'mytaxi_rl_', $limit = 8 ) {
 		if ( defined( 'MYTAXI_VERIFY' ) && MYTAXI_VERIFY ) {
 			return true;
 		}
-		$ip  = isset( $_SERVER['REMOTE_ADDR'] ) ? (string) $_SERVER['REMOTE_ADDR'] : '0';
-		$key = 'mytaxi_rl_' . md5( $ip );
+		$ip   = isset( $_SERVER['REMOTE_ADDR'] ) ? (string) $_SERVER['REMOTE_ADDR'] : '0';
+		$key  = $prefix . md5( $ip );
 		$hits = (int) get_transient( $key );
-		if ( $hits >= 8 ) {
+		if ( $hits >= $limit ) {
 			return false;
 		}
 		set_transient( $key, $hits + 1, 15 * MINUTE_IN_SECONDS );

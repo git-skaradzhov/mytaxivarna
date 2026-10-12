@@ -36,27 +36,37 @@ class Setup {
 		$home = self::ensure_page(
 			'home',
 			'MyTaxi Varna',
-			"MyTaxi Varna brings the local taxi services and the airport transfers onto one site.\n\nEach service keeps its own name, phone, and request recipient. A local taxi page is for someone already in the resort. An airport transfer page is for a trip planned around Varna Airport or Sofia Airport.\n\nSample text for review. Replace this presentation before the public launch."
+			'Local taxis in Golden Sands, Albena, and Kranevo, plus transfers from Varna Airport and Sofia Airport.'
 		);
 		self::ensure_page(
 			'contact',
-			'Contact',
-			"Choose the service you need and use the phone or request form on that page.\n\nAn online request is sent to that service only. The team confirms it with you. Sending the form does not create a booking.\n\nSample text for review."
+			'Contact your taxi service',
+			'Choose your destination and contact the team directly.'
 		);
 		self::ensure_page(
 			'local-taxi',
-			'Local taxi',
-			'Coastal taxi services around Varna. Each resort keeps its own phone.'
+			'Local taxi services',
+			'Choose Golden Sands, Albena or Kranevo for a local taxi.'
 		);
 		self::ensure_page(
 			'airport-transfers',
 			'Airport transfers',
-			'Transfers to and from Varna Airport and Sofia Airport. Each airport service keeps its own phone.'
+			'Select your airport to view destinations and contact details.'
 		);
 		self::ensure_page(
 			'routes',
-			'Routes',
-			'A price is shown only when it is confirmed.'
+			'Airport transfer routes',
+			'Choose your destination and request a quote for your journey.'
+		);
+		self::ensure_page(
+			'privacy-policy',
+			'Privacy policy',
+			'We use the name, phone, email and journey details you submit so the team can reply about that request. The form is not a mailing list. The site owner still needs to confirm the final privacy wording before launch.'
+		);
+		self::ensure_page(
+			'terms',
+			'Terms',
+			'Sending a request does not confirm the journey. The team contacts you to confirm availability and the quote before the trip.'
 		);
 
 		if ( ! (int) get_option( 'page_on_front' ) ) {
@@ -79,6 +89,8 @@ class Setup {
 
 		self::retire_default_content();
 		self::ensure_menu( $services );
+		self::refresh_editorial();
+		self::apply_design_copy();
 		self::flush();
 
 		return $services;
@@ -100,18 +112,18 @@ class Setup {
 				'areas' => array( 'Golden Sands' ),
 				'cta'   => 'Call Taxi Golden Sands',
 				'meta_title' => 'Taxi Golden Sands | Local taxi',
-				'meta_desc'  => 'Local taxi for guests already in Golden Sands. Airport transfers use a different service and phone. Sample text for review.',
-				'intro' => 'Taxi Golden Sands is the local taxi entry for guests who are already in Golden Sands. A pickup from Varna Airport is handled by Varna Airport Transfers, with that service’s own phone. Sample text for review.',
-				'body'  => "Use this page to call Taxi Golden Sands or, once a request email is added, to send a local taxi request.\n\nThe page does not publish a price list, fleet, or working hours because those details have not been confirmed.\n\nSample text for review.",
-				'terms' => 'A call or a form request is not a confirmed booking. The Taxi Golden Sands team confirms the trip with you.',
+				'meta_desc'  => 'Local taxi for Golden Sands. Call to request a car.',
+				'intro' => 'Local taxi journeys from Golden Sands.',
+				'body'  => "Call the number on this page when you need a taxi in Golden Sands.\n\nFor a ride from Varna Airport, open the airport transfer to Golden Sands.",
+				'terms' => 'We’ll confirm availability and your quote before your journey.',
 				'faqs'  => array(
 					array(
 						'question' => 'How do I ask for a taxi in Golden Sands?',
-						'answer'   => 'Call the Taxi Golden Sands number on this page. An online form appears here only after a request email is saved for this service. The team confirms the trip; the request is not an automatic booking.',
+						'answer'   => 'Call the number on this page, or send the form when it is available. We’ll confirm availability and your quote before your journey.',
 					),
 					array(
-						'question' => 'Does this page cover a pickup from Varna Airport?',
-						'answer'   => 'No. A transfer from Varna Airport uses Varna Airport Transfers and the phone published on that service, even when the destination is Golden Sands.',
+						'question' => 'Can I book a pickup from Varna Airport here?',
+						'answer'   => 'A pickup from Varna Airport is arranged with Varna Airport Transfers. Open the route from Varna Airport to Golden Sands.',
 					),
 				),
 			),
@@ -124,18 +136,18 @@ class Setup {
 				'areas' => array( 'Albena' ),
 				'cta'   => 'Call Taxi Albena',
 				'meta_title' => 'Taxi Albena | Local taxi',
-				'meta_desc'  => 'Local taxi for guests already in Albena. This is not the Varna Airport transfer number. Sample text for review.',
-				'intro' => 'Taxi Albena is for a taxi while you are in Albena. It is a separate service from Taxi Kranevo and from the airport transfer desk. Sample text for review.',
-				'body'  => "Call the Taxi Albena number shown at the top of this page when you need a car in the resort.\n\nPickup points, payment methods, and vehicle types are not stated here until they are confirmed.\n\nSample text for review.",
-				'terms' => 'Calling or writing to Taxi Albena starts a request. The team confirms whether the car is available.',
+				'meta_desc'  => 'Local taxi for Albena. Call to request a car.',
+				'intro' => 'Contact Taxi Albena for your journey.',
+				'body'  => "Call Taxi Albena when you are in the resort and need a car.\n\nFor a ride from Varna Airport, open the airport transfer to Albena.",
+				'terms' => 'We’ll confirm availability and your quote before your journey.',
 				'faqs'  => array(
 					array(
-						'question' => 'Which trips belong on the Taxi Albena page?',
-						'answer'   => 'Trips for people who are already in Albena and want the local taxi service. The page is the direct entry for that team.',
+						'question' => 'Which trips is this page for?',
+						'answer'   => 'Taxi trips while you are in Albena. Call the number on this page.',
 					),
 					array(
-						'question' => 'Why is the airport number different?',
-						'answer'   => 'Varna Airport to Albena is a transfer arranged by Varna Airport Transfers. That route shows the airport service phone, not the Taxi Albena phone.',
+						'question' => 'I am flying into Varna. Where do I start?',
+						'answer'   => 'Open the route from Varna Airport to Albena. That transfer is handled by Varna Airport Transfers.',
 					),
 				),
 			),
@@ -148,18 +160,18 @@ class Setup {
 				'areas' => array( 'Kranevo' ),
 				'cta'   => 'Call Taxi Kranevo',
 				'meta_title' => 'Taxi Kranevo | Local taxi',
-				'meta_desc'  => 'Local taxi for guests already in Kranevo, with its own phone. Sample text for review.',
-				'intro' => 'Taxi Kranevo is the local taxi entry for Kranevo. The phone on this page belongs to this service only and is not the Golden Sands or Albena number. Sample text for review.',
-				'body'  => "If you are in Kranevo and need a taxi, start here. The resort pages are separate so a visitor is not sent to another service’s phone.\n\nNo shared fleet, price, or response-time claim is published.\n\nSample text for review.",
-				'terms' => 'A request to Taxi Kranevo waits for confirmation from that team.',
+				'meta_desc'  => 'Local taxi for Kranevo. Call to request a car.',
+				'intro' => 'Local taxi journeys from Kranevo.',
+				'body'  => "Call Taxi Kranevo when you are in Kranevo and need a car.\n\nFor a ride from Varna Airport, open the airport transfer to Kranevo.",
+				'terms' => 'We’ll confirm availability and your quote before your journey.',
 				'faqs'  => array(
 					array(
-						'question' => 'Is Taxi Kranevo the same service as Taxi Albena?',
-						'answer'   => 'No. Taxi Kranevo has its own page, phone, and request recipient. Do not use the Albena or Golden Sands number for a Kranevo taxi.',
+						'question' => 'Is Taxi Kranevo the same as Taxi Albena?',
+						'answer'   => 'Taxi Kranevo is the service for Kranevo. Use the number on this page.',
 					),
 					array(
-						'question' => 'What if I need a car from Varna Airport to Kranevo?',
-						'answer'   => 'Open the Varna Airport to Kranevo route. That page uses the Varna Airport Transfers contacts.',
+						'question' => 'I need a car from Varna Airport. Where do I start?',
+						'answer'   => 'Open the route from Varna Airport to Kranevo.',
 					),
 				),
 			),
@@ -172,18 +184,18 @@ class Setup {
 				'areas' => array( 'Varna Airport' ),
 				'cta'   => 'Request a Varna Airport transfer',
 				'meta_title' => 'Varna Airport Transfers',
-				'meta_desc'  => 'Pre-arranged transfers to and from Varna Airport, with this service’s own phone. Sample text for review.',
-				'intro' => 'Varna Airport Transfers is for a planned trip to or from Varna Airport. Routes to Golden Sands, Albena, Kranevo, and Balchik use this phone, not the local taxi numbers. Sample text for review.',
-				'body'  => "Choose a route to see the published price, or send a request if the price is still on request. Meeting instructions and delayed-flight terms appear only after they are confirmed.\n\nThe form asks for the flight number when you have one. That does not mean the service monitors the flight automatically.\n\nSample text for review.",
-				'terms' => 'An airport request is reviewed by the Varna Airport Transfers team. Nothing on this page confirms a car until the team replies.',
+				'meta_desc'  => 'Transfers to and from Varna Airport, including Golden Sands, Albena, Kranevo, and Balchik.',
+				'intro' => 'Transfers between Varna Airport and coastal destinations.',
+				'body'  => "Choose a route or send your flight details.\n\nWe’ll confirm availability and your quote before your journey.",
+				'terms' => 'We’ll confirm availability and your quote before your journey.',
 				'faqs'  => array(
 					array(
-						'question' => 'How is an airport transfer requested?',
-						'answer'   => 'Use the phone on this page or the request form once a request email is saved. Include the date, time, and flight number when you know them. The team confirms the arrangement.',
+						'question' => 'How do I request a transfer?',
+						'answer'   => 'Call the number on this page or send the form with your date, time, and flight number. We’ll confirm availability and your quote before your journey.',
 					),
 					array(
-						'question' => 'What happens if the flight is late?',
-						'answer'   => 'Write the flight number in the request. The team confirms how a delay is handled. This page does not promise a waiting time.',
+						'question' => 'Which places can I travel to?',
+						'answer'   => 'The published routes cover Golden Sands, Albena, Kranevo, and Balchik.',
 					),
 				),
 			),
@@ -196,18 +208,18 @@ class Setup {
 				'areas' => array( 'Sofia Airport' ),
 				'cta'   => 'Sofia Airport transfer details',
 				'meta_title' => 'Sofia Airport Transfers',
-				'meta_desc'  => 'Sofia Airport transfer entry. No phone is published until one is confirmed for this service. Sample text for review.',
-				'intro' => 'Sofia Airport Transfers is a separate direction from the Varna services. No phone, WhatsApp number, or request email has been confirmed, so none is borrowed from another service. Sample text for review.',
-				'body'  => "The Sofia Airport to Sofia route can be prepared here. Contact buttons stay hidden until this service has its own confirmed details.\n\nSample text for review.",
-				'terms' => 'A request can be sent only after a recipient email is saved for Sofia Airport Transfers. Until then, the page does not offer another company’s phone.',
+				'meta_desc'  => 'Transfers between Sofia Airport and Sofia.',
+				'intro' => 'Separate service. Contacts to be supplied before launch.',
+				'body'  => "The route from Sofia Airport to Sofia is listed with this service.\n\nWe’ll confirm availability and your quote before your journey.",
+				'terms' => 'We’ll confirm availability and your quote before your journey.',
 				'faqs'  => array(
 					array(
-						'question' => 'Why is there no phone on this page?',
-						'answer'   => 'A phone number for Sofia Airport Transfers has not been confirmed. The site will not show a Varna or resort number in its place.',
+						'question' => 'How do I request a Sofia Airport transfer?',
+						'answer'   => 'Use the contact options on this page. We’ll confirm availability and your quote before your journey.',
 					),
 					array(
-						'question' => 'Is a request a confirmed car?',
-						'answer'   => 'No. When online requests open, the team still has to confirm the trip.',
+						'question' => 'Which route is listed?',
+						'answer'   => 'Sofia Airport to Sofia.',
 					),
 				),
 			),
@@ -221,11 +233,11 @@ class Setup {
 	 */
 	private static function routes() {
 		$rows = array(
-			array( 'varna-airport-to-golden-sands', 'Varna Airport → Golden Sands', 'varna-airport-transfers', 'Varna Airport', 'Golden Sands', 'Transfer from Varna Airport to Golden Sands, using the Varna Airport Transfers contacts rather than the local Golden Sands taxi phone. Sample text for review.' ),
-			array( 'varna-airport-to-albena', 'Varna Airport → Albena', 'varna-airport-transfers', 'Varna Airport', 'Albena', 'Transfer from Varna Airport to Albena. The local Taxi Albena number is for trips inside the resort, not for this airport route. Sample text for review.' ),
-			array( 'varna-airport-to-kranevo', 'Varna Airport → Kranevo', 'varna-airport-transfers', 'Varna Airport', 'Kranevo', 'Transfer from Varna Airport to Kranevo through Varna Airport Transfers. Taxi Kranevo remains the local resort service. Sample text for review.' ),
-			array( 'varna-airport-to-balchik', 'Varna Airport → Balchik', 'varna-airport-transfers', 'Varna Airport', 'Balchik', 'Transfer from Varna Airport to Balchik. This route does not turn the old general Balchik address into an airport page. Sample text for review.' ),
-			array( 'sofia-airport-to-sofia', 'Sofia Airport → Sofia', 'sofia-airport-transfers', 'Sofia Airport', 'Sofia', 'Transfer from Sofia Airport into Sofia. It belongs to Sofia Airport Transfers and does not use a Varna phone. Sample text for review.' ),
+			array( 'varna-airport-to-golden-sands', 'Varna Airport → Golden Sands', 'varna-airport-transfers', 'Varna Airport', 'Golden Sands', 'Transfer from Varna Airport to Golden Sands.' ),
+			array( 'varna-airport-to-albena', 'Varna Airport → Albena', 'varna-airport-transfers', 'Varna Airport', 'Albena', 'Transfer from Varna Airport to Albena.' ),
+			array( 'varna-airport-to-kranevo', 'Varna Airport → Kranevo', 'varna-airport-transfers', 'Varna Airport', 'Kranevo', 'Transfer from Varna Airport to Kranevo.' ),
+			array( 'varna-airport-to-balchik', 'Varna Airport → Balchik', 'varna-airport-transfers', 'Varna Airport', 'Balchik', 'Transfer from Varna Airport to Balchik.' ),
+			array( 'sofia-airport-to-sofia', 'Sofia Airport → Sofia', 'sofia-airport-transfers', 'Sofia Airport', 'Sofia', 'Transfer from Sofia Airport to Sofia.' ),
 		);
 		$out = array();
 		$order = 10;
@@ -240,15 +252,15 @@ class Setup {
 				'order'       => $order,
 				'meta_title'  => $row[3] . ' to ' . $row[4] . ' transfer',
 				'meta_desc'   => $row[5],
-				'body'        => "The price is shown only after it is confirmed. Until then the page says the price is on request and does not show 0 EUR.\n\nDistance, journey time, passenger capacity, luggage allowance, meeting point, and payment method are omitted until they are confirmed.\n\nSample text for review.",
+				'body'        => 'Tell us your pickup time. We’ll confirm availability and your quote before the journey.',
 				'faqs'        => array(
 					array(
 						'question' => 'How do I request ' . $row[3] . ' to ' . $row[4] . '?',
-						'answer'   => 'Use the contacts of the linked service. The pickup and drop-off on the form start filled with ' . $row[3] . ' and ' . $row[4] . '. The team confirms the request; it is not a booking.',
+						'answer'   => 'Use the form on this page. The pickup and destination are already filled in. We’ll confirm availability and your quote before your journey.',
 					),
 					array(
-						'question' => 'Why does the page say price on request?',
-						'answer'   => 'No confirmed fare has been entered for this route. A missing price is never displayed as 0 EUR.',
+						'question' => 'When is the price confirmed?',
+						'answer'   => 'If a fare is published, it is shown with the route. Otherwise the price is confirmed with you before the journey.',
 					),
 				),
 			);
@@ -377,11 +389,221 @@ class Setup {
 				'post_title'   => $title,
 				'post_name'    => $slug,
 				'post_content' => self::paragraphs( $body ),
-				'post_excerpt' => 'home' === $slug ? 'Local taxi in the resorts, and airport transfers from Varna and Sofia. Sample text for review.' : '',
+				'post_excerpt' => '',
 			),
 			true
 		);
 		return is_wp_error( $id ) ? 0 : (int) $id;
+	}
+
+	/**
+	/**
+	 * Align seeded copy with the design handoff when it is still the previous sample.
+	 */
+	private static function apply_design_copy() {
+		$intros = array(
+			'taxi-golden-sands'       => array(
+				'Taxi for guests staying in Golden Sands.' => 'Local taxi journeys from Golden Sands.',
+			),
+			'taxi-albena'             => array(
+				'Taxi for guests staying in Albena.' => 'Contact Taxi Albena for your journey.',
+			),
+			'taxi-kranevo'            => array(
+				'Taxi for guests staying in Kranevo.' => 'Local taxi journeys from Kranevo.',
+			),
+			'varna-airport-transfers' => array(
+				'Transfers to and from Varna Airport, including Golden Sands, Albena, Kranevo, and Balchik.' => 'Transfers between Varna Airport and coastal destinations.',
+			),
+			'sofia-airport-transfers' => array(
+				'Transfers between Sofia Airport and Sofia.' => 'Separate service. Contacts to be supplied before launch.',
+			),
+		);
+		foreach ( $intros as $slug => $map ) {
+			$post = self::find( 'mytaxi_service', $slug );
+			if ( ! $post ) {
+				continue;
+			}
+			$current = (string) get_post_meta( $post->ID, '_mytaxi_intro', true );
+			if ( isset( $map[ $current ] ) ) {
+				update_post_meta( $post->ID, '_mytaxi_intro', $map[ $current ] );
+			}
+		}
+
+		$pages = array(
+			'home'               => array(
+				'titles'  => array(),
+				'bodies'  => array(
+					'Local taxis in Golden Sands, Albena, and Kranevo, plus transfers from Varna Airport and Sofia Airport.' => '',
+				),
+			),
+			'local-taxi'         => array(
+				'titles' => array( 'Local taxi' => 'Local taxi services' ),
+				'bodies' => array(
+					'Taxis for guests already in Golden Sands, Albena, and Kranevo.' => 'Choose Golden Sands, Albena or Kranevo for a local taxi.',
+				),
+			),
+			'airport-transfers'  => array(
+				'titles' => array(),
+				'bodies' => array(
+					'Transfers to and from Varna Airport and Sofia Airport.' => 'Select your airport to view destinations and contact details.',
+				),
+			),
+			'routes'             => array(
+				'titles' => array( 'Routes' => 'Airport transfer routes' ),
+				'bodies' => array(
+					'Choose a route and request a transfer.' => 'Choose your destination and request a quote for your journey.',
+				),
+			),
+			'contact'            => array(
+				'titles' => array( 'Contact' => 'Contact your taxi service' ),
+				'bodies' => array(
+					'Call the service for your destination, or open its page to send a request.' => 'Choose your destination and contact the team directly.',
+				),
+			),
+		);
+		foreach ( $pages as $slug => $map ) {
+			$post = get_page_by_path( $slug );
+			if ( ! $post ) {
+				continue;
+			}
+			$update = array( 'ID' => $post->ID );
+			$title  = (string) $post->post_title;
+			$body   = trim( wp_strip_all_tags( $post->post_content ) );
+			if ( isset( $map['titles'][ $title ] ) ) {
+				$update['post_title'] = $map['titles'][ $title ];
+			}
+			if ( isset( $map['bodies'][ $body ] ) ) {
+				$update['post_content'] = '' === $map['bodies'][ $body ] ? '' : '<p>' . $map['bodies'][ $body ] . '</p>';
+			}
+			if ( count( $update ) > 1 ) {
+				wp_update_post( $update );
+			}
+		}
+
+		$privacy = get_page_by_path( 'privacy-policy' );
+		if ( $privacy && str_contains( $privacy->post_content, 'Suggested text' ) ) {
+			wp_update_post(
+				array(
+					'ID'           => $privacy->ID,
+					'post_title'   => 'Privacy policy',
+					'post_content' => '<p>We use the name, phone, email and journey details you submit so the team can reply about that request. The form is not a mailing list. The site owner still needs to confirm the final privacy wording before launch.</p>',
+				)
+			);
+		}
+	}
+
+	/**
+	 * Replace sample notes that explain the implementation.
+	 */
+	private static function refresh_editorial() {
+		foreach ( self::services() as $row ) {
+			$post = self::find( 'mytaxi_service', $row['slug'] );
+			if ( ! $post ) {
+				continue;
+			}
+			self::replace_if_stale( $post->ID, '_mytaxi_intro', $row['intro'] );
+			self::replace_if_stale( $post->ID, '_mytaxi_meta_description', $row['meta_desc'] );
+			self::replace_if_stale( $post->ID, '_mytaxi_meta_title', $row['meta_title'] );
+			self::replace_if_stale( $post->ID, '_mytaxi_terms', $row['terms'] );
+			if ( self::stale( (string) get_post_meta( $post->ID, '_mytaxi_faq', true ) ) ) {
+				update_post_meta( $post->ID, '_mytaxi_faq', Fields::encode_list( $row['faqs'] ) );
+			}
+			if ( self::stale( $post->post_content ) ) {
+				wp_update_post(
+					array(
+						'ID'           => $post->ID,
+						'post_content' => self::paragraphs( $row['body'] ),
+					)
+				);
+			}
+		}
+
+		foreach ( self::routes() as $row ) {
+			$post = self::find( 'mytaxi_route', $row['slug'] );
+			if ( ! $post ) {
+				continue;
+			}
+			self::replace_if_stale( $post->ID, '_mytaxi_summary', $row['summary'] );
+			self::replace_if_stale( $post->ID, '_mytaxi_meta_description', $row['meta_desc'] );
+			self::replace_if_stale( $post->ID, '_mytaxi_meta_title', $row['meta_title'] );
+			if ( self::stale( (string) get_post_meta( $post->ID, '_mytaxi_faq', true ) ) ) {
+				update_post_meta( $post->ID, '_mytaxi_faq', Fields::encode_list( $row['faqs'] ) );
+			}
+			if ( self::stale( $post->post_content ) ) {
+				wp_update_post(
+					array(
+						'ID'           => $post->ID,
+						'post_content' => self::paragraphs( $row['body'] ),
+					)
+				);
+			}
+		}
+
+		$pages = array(
+			'home'               => 'Local taxis in Golden Sands, Albena, and Kranevo, plus transfers from Varna Airport and Sofia Airport.',
+			'contact'            => 'Call the service for your destination, or open its page to send a request.',
+			'local-taxi'         => 'Taxis for guests already in Golden Sands, Albena, and Kranevo.',
+			'airport-transfers'  => 'Transfers to and from Varna Airport and Sofia Airport.',
+			'routes'             => 'Choose a route and request a transfer.',
+		);
+		foreach ( $pages as $slug => $body ) {
+			$post = self::find( 'page', $slug );
+			if ( ! $post || ( ! self::stale( $post->post_content ) && ! self::stale( $post->post_excerpt ) ) ) {
+				continue;
+			}
+			wp_update_post(
+				array(
+					'ID'           => $post->ID,
+					'post_content' => self::paragraphs( $body ),
+					'post_excerpt' => '',
+				)
+			);
+		}
+	}
+
+	/**
+	 * Update one meta value when it still explains the implementation.
+	 *
+	 * @param int    $post_id Post ID.
+	 * @param string $key Meta key.
+	 * @param string $value Replacement.
+	 */
+	private static function replace_if_stale( $post_id, $key, $value ) {
+		if ( self::stale( (string) get_post_meta( $post_id, $key, true ) ) ) {
+			update_post_meta( $post_id, $key, $value );
+		}
+	}
+
+	/**
+	 * Whether public copy still describes internal settings.
+	 *
+	 * @param string $text Text.
+	 * @return bool
+	 */
+	private static function stale( $text ) {
+		foreach ( array(
+			'Sample text for review',
+			'request recipient',
+			'0 EUR',
+			'Contact buttons stay hidden',
+			'not shown as 0',
+			'keeps its own phone',
+			'does not create a booking',
+			'has not been confirmed',
+			'No phone, WhatsApp',
+			'does not publish',
+			'not a booking',
+			'own phone',
+			'shown only when it is confirmed',
+			'request email',
+			'automatic booking',
+			'published on that service',
+		) as $needle ) {
+			if ( false !== stripos( (string) $text, $needle ) ) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/**

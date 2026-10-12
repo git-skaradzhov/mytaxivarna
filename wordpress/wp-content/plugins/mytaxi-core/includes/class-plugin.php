@@ -26,6 +26,7 @@ class Plugin {
 		Meta::boot();
 		Admin::boot();
 		Forms::boot();
+		ContactForm::boot();
 		Seo::boot();
 	}
 

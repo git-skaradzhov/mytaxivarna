@@ -15,6 +15,7 @@ if ( ! class_exists( '\WP_CLI' ) ) {
 
 \WP_CLI::add_command( 'mytaxi setup', array( Cli::class, 'setup' ) );
 \WP_CLI::add_command( 'mytaxi verify', array( Cli::class, 'verify' ) );
+\WP_CLI::add_command( 'mytaxi mailtest', array( Cli::class, 'mailtest' ) );
 
 /**
  * Setup and verification commands.
@@ -50,9 +51,6 @@ class Cli {
 			$failures[] = $label;
 			\WP_CLI::warning( 'FAIL ' . $label );
 		};
-
-		Setup::run();
-		Setup::run();
 
 		$services = get_posts(
 			array(
@@ -110,7 +108,6 @@ class Cli {
 		$check( 'no reviews seeded', array() === Data::home_extras()['reviews'] );
 
 		$route_id = $albena_route ? (int) $albena_route->ID : 0;
-		$before   = (string) get_post_meta( $route_id, '_mytaxi_price', true );
 		$label    = Price::present(
 			array(
 				'price'       => '',
@@ -126,15 +123,15 @@ class Cli {
 				'price_basis' => 'per_vehicle',
 			)
 		);
-		$check( 'zero price is not displayed as 0 EUR', false === $zero['offer'] && ! str_contains( (string) $zero['text'], '0' ) );
-		update_post_meta( $route_id, '_mytaxi_price', '45.00' );
-		update_post_meta( $route_id, '_mytaxi_price_type', 'fixed' );
-		update_post_meta( $route_id, '_mytaxi_price_basis', 'per_vehicle' );
-		$changed = Data::route( $route_id );
-		$check( 'price change is the route label', isset( $changed['price']['text'] ) && str_contains( (string) $changed['price']['text'], '45' ) && true === $changed['price']['offer'] );
-		update_post_meta( $route_id, '_mytaxi_price', $before );
-		update_post_meta( $route_id, '_mytaxi_price_type', 'on_request' );
-		update_post_meta( $route_id, '_mytaxi_price_basis', '' );
+		$check( 'zero price is not displayed as an amount', false === $zero['offer'] && null === $zero['amount'] );
+		$sample_price = Price::present(
+			array(
+				'price'       => '45.00',
+				'price_type'  => 'fixed',
+				'price_basis' => 'per_vehicle',
+			)
+		);
+		$check( 'confirmed price stays an offer', true === $sample_price['offer'] && str_contains( (string) $sample_price['text'], '45' ) );
 
 		$check( 'slug collision detects taxi-albena', Routing::conflicts( 'taxi-albena', 0 ) );
 		$check( 'own slug is not a collision', $albena && ! Routing::conflicts( 'taxi-albena', (int) $albena->ID ) );
@@ -160,43 +157,84 @@ class Cli {
 		);
 		$check( 'header injection is not a successful send', empty( $injected['ok'] ) );
 
+		$wrong = Forms::inspect( self::payload( $albena ? (int) $albena->ID : 0, $route_id, self::valid_fields() ) );
+		$check( 'route from another service is rejected', empty( $wrong['ok'] ) && 'route_invalid' === $wrong['code'] );
+		$expired = Forms::inspect( self::payload( $varna ? (int) $varna->ID : 0, $route_id, self::valid_fields(), 'expired-token' ) );
+		$check( 'expired token is rejected', empty( $expired['ok'] ) && 'token' === $expired['code'] );
+		$check( 'visitor header has no newline', ! str_contains( Fields::header_safe( "Ann\r\nBcc: bad@example.com" ), "\n" ) );
+
 		$original_email = $varna ? (string) get_post_meta( $varna->ID, '_mytaxi_email', true ) : '';
-		if ( $varna ) {
-			update_post_meta( $varna->ID, '_mytaxi_email', 'dispatch-test@example.com' );
-		}
-		$captured = array();
-		add_filter(
-			'pre_wp_mail',
-			static function ( $short_circuit, $atts ) use ( &$captured ) {
+		$mail_probe     = $varna && '' === $original_email;
+		try {
+			if ( $mail_probe ) {
+				update_post_meta( $varna->ID, '_mytaxi_email', 'dispatch-test@example.com' );
+			}
+			$recipient = $varna ? (string) get_post_meta( $varna->ID, '_mytaxi_email', true ) : '';
+			$failed    = static function () {
+				return false;
+			};
+			add_filter( 'pre_wp_mail', $failed, 10, 2 );
+			$mail_down = Forms::inspect( self::payload( $varna ? (int) $varna->ID : 0, $route_id, self::valid_fields() ) );
+			remove_filter( 'pre_wp_mail', $failed, 10 );
+			$check( 'mail failure is not success', '' !== $recipient && empty( $mail_down['ok'] ) && 'mail_failed' === $mail_down['code'] );
+
+			$captured = array();
+			$capture  = static function ( $short_circuit, $atts ) use ( &$captured ) {
+				unset( $short_circuit );
 				$captured[] = $atts;
 				return true;
-			},
-			10,
-			2
-		);
-		$payload = self::payload( $varna ? (int) $varna->ID : 0, $route_id, self::valid_fields() );
-		$valid   = Forms::inspect( $payload );
-		$check( 'valid request is accepted as unconfirmed', ! empty( $valid['ok'] ) && 'sent' === $valid['code'] );
-		$mail    = $captured[0] ?? array();
-		$headers = implode( "\n", (array) ( $mail['headers'] ?? array() ) );
-		$check( 'mail recipient comes from the service', ( $mail['to'] ?? '' ) === 'dispatch-test@example.com' );
-		$check( 'mail from is not the visitor', ! str_contains( $headers, 'From: Ana' ) && str_contains( $headers, 'Reply-To:' ) );
-		$check( 'visitor header has no newline', ! str_contains( Fields::header_safe( "Ann\r\nBcc: bad@example.com" ), "\n" ) );
-		$again = Forms::inspect( $payload );
-		$check( 'repeat submit does not send a second email', ! empty( $again['ok'] ) && 1 === count( $captured ) );
-
-		remove_all_filters( 'pre_wp_mail' );
-		$live = wp_mail( 'dispatch-test@example.com', 'MyTaxi delivery check', 'Local Mailpit delivery check for Varna Airport Transfers.' );
-		$check( 'wp_mail accepted a local message', (bool) $live );
-
-		if ( $varna ) {
-			update_post_meta( $varna->ID, '_mytaxi_email', $original_email );
+			};
+			add_filter( 'pre_wp_mail', $capture, 10, 2 );
+			$payload = self::payload( $varna ? (int) $varna->ID : 0, $route_id, self::valid_fields() );
+			$valid   = Forms::inspect( $payload );
+			$again   = Forms::inspect( $payload );
+			remove_filter( 'pre_wp_mail', $capture, 10 );
+			$mail    = $captured[0] ?? array();
+			$headers = implode( "\n", (array) ( $mail['headers'] ?? array() ) );
+			$check( 'valid request is accepted as unconfirmed', ! empty( $valid['ok'] ) && 'sent' === $valid['code'] );
+			$check( 'mail recipient comes from the service', '' !== $recipient && ( $mail['to'] ?? '' ) === $recipient );
+			$check( 'mail from is not the visitor', ! str_contains( $headers, 'From: Ana' ) && str_contains( $headers, 'Reply-To:' ) );
+			$check( 'repeat submit does not send a second email', ! empty( $again['ok'] ) && 1 === count( $captured ) );
+		} finally {
+			if ( $mail_probe && $varna ) {
+				update_post_meta( $varna->ID, '_mytaxi_email', $original_email );
+			}
 		}
+		$restored = $varna ? (string) get_post_meta( $varna->ID, '_mytaxi_email', true ) : '';
+		$check( 'verify restored the service email', $restored === $original_email );
 
 		if ( $failures ) {
 			\WP_CLI::error( count( $failures ) . ' checks failed.' );
 		}
 		\WP_CLI::success( 'MyTaxi verification passed.' );
+	}
+
+	/**
+	 * Send one message through the local test mailbox.
+	 *
+	 * ## OPTIONS
+	 *
+	 * [--to=<email>]
+	 * : Example mailbox that receives the test.
+	 *
+	 * @param array<int,string>    $args Positional args.
+	 * @param array<string,string> $assoc Associative args.
+	 * @when after_wp_load
+	 */
+	public static function mailtest( $args, $assoc ) {
+		unset( $args );
+		if ( 'local' !== wp_get_environment_type() ) {
+			\WP_CLI::error( 'Test mail runs only when WP_ENVIRONMENT_TYPE is local.' );
+		}
+		$to = isset( $assoc['to'] ) ? sanitize_email( (string) $assoc['to'] ) : 'dispatch-test@example.com';
+		if ( ! is_email( $to ) || ! preg_match( '/@(example\.com|example\.test)$/i', $to ) ) {
+			\WP_CLI::error( 'The test mailbox must end in example.com or example.test.' );
+		}
+		$sent = wp_mail( $to, 'MyTaxi delivery check', 'Local mailbox check.' );
+		if ( ! $sent ) {
+			\WP_CLI::error( 'Local mail transport did not accept a message.' );
+		}
+		\WP_CLI::success( 'Test message accepted for ' . $to );
 	}
 
 	/**

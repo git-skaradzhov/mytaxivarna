@@ -76,7 +76,7 @@ class Meta {
 		$email = (string) get_post_meta( $id, '_mytaxi_email', true );
 		$phone = (string) get_post_meta( $id, '_mytaxi_phone', true );
 		if ( '' === $email ) {
-			echo '<div class="notice notice-warning inline"><p>Няма имейл за заявки. Формата на сайта няма да приема запитвания за тази услуга, докато не добавите получател.</p></div>';
+			echo '<div class="notice notice-warning inline"><p>Няма имейл на услугата. За теста формата праща до info@skaradzhov.com. Преди пускане сложете получател само за тази услуга.</p></div>';
 		}
 		if ( '' === $phone ) {
 			echo '<div class="notice notice-warning inline"><p>Няма телефон. Публичният бутон за обаждане остава скрит. Не се използва номер от друга услуга.</p></div>';
@@ -126,6 +126,7 @@ class Meta {
 
 		Fields::section( 'Показване' );
 		Fields::checkbox( 'mytaxi_show_home', 'Показване на началната страница', '1' === (string) get_post_meta( $id, '_mytaxi_show_home', true ) );
+		Fields::checkbox( 'mytaxi_list_hidden', 'Временно скрий от основните списъци', '1' === (string) get_post_meta( $id, '_mytaxi_list_hidden', true ), 'Страницата остава на адреса си. Не се трие и не се пренасочва.' );
 		Fields::input( 'mytaxi_order', 'Ред на показване', (string) get_post_meta( $id, '_mytaxi_order', true ), 'По-малко число се показва по-напред.', 'number' );
 		Fields::end_section();
 
@@ -240,6 +241,7 @@ class Meta {
 		update_post_meta( $post_id, '_mytaxi_benefits', Fields::encode_list( Fields::line_list( wp_unslash( $_POST['mytaxi_benefits'] ?? '' ) ) ) );
 		update_post_meta( $post_id, '_mytaxi_faq', Fields::encode_list( self::faqs_from_post() ) );
 		update_post_meta( $post_id, '_mytaxi_show_home', isset( $_POST['mytaxi_show_home'] ) ? '1' : '0' );
+		update_post_meta( $post_id, '_mytaxi_list_hidden', isset( $_POST['mytaxi_list_hidden'] ) ? '1' : '0' );
 		update_post_meta( $post_id, '_mytaxi_order', (string) absint( $_POST['mytaxi_order'] ?? 0 ) );
 		update_post_meta( $post_id, '_mytaxi_meta_title', sanitize_text_field( wp_unslash( $_POST['mytaxi_meta_title'] ?? '' ) ) );
 		update_post_meta( $post_id, '_mytaxi_meta_description', sanitize_textarea_field( wp_unslash( $_POST['mytaxi_meta_description'] ?? '' ) ) );

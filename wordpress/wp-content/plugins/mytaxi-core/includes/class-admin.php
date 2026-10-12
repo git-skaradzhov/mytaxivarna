@@ -24,6 +24,7 @@ class Admin {
 		add_filter( 'manage_mytaxi_route_posts_columns', array( __CLASS__, 'route_columns' ) );
 		add_action( 'manage_mytaxi_route_posts_custom_column', array( __CLASS__, 'route_column' ), 10, 2 );
 		add_action( 'admin_notices', array( __CLASS__, 'sample_notice' ) );
+		add_action( 'admin_notices', array( __CLASS__, 'missing_contact_notice' ) );
 		add_action( 'admin_post_mytaxi_save_settings', array( __CLASS__, 'save_settings' ) );
 		add_action( 'admin_post_mytaxi_save_home', array( __CLASS__, 'save_home' ) );
 		add_action( 'admin_post_mytaxi_run_setup', array( __CLASS__, 'run_setup' ) );
@@ -174,6 +175,46 @@ class Admin {
 	}
 
 	/**
+	 * List published services that still have no phone or request email.
+	 */
+	public static function missing_contact_notice() {
+		if ( ! current_user_can( 'edit_posts' ) ) {
+			return;
+		}
+		$posts = get_posts(
+			array(
+				'post_type'      => 'mytaxi_service',
+				'post_status'    => 'publish',
+				'posts_per_page' => 20,
+				'orderby'        => 'title',
+				'order'          => 'ASC',
+				'no_found_rows'  => true,
+			)
+		);
+		$lines = array();
+		foreach ( $posts as $post ) {
+			$missing = array();
+			if ( '' === (string) get_post_meta( $post->ID, '_mytaxi_phone', true ) ) {
+				$missing[] = 'телефон';
+			}
+			if ( '' === Fields::email( (string) get_post_meta( $post->ID, '_mytaxi_email', true ) ) ) {
+				$missing[] = 'имейл за заявки';
+			}
+			if ( $missing ) {
+				$lines[] = get_the_title( $post ) . ' — липсва ' . implode( ' и ', $missing );
+			}
+		}
+		if ( ! $lines ) {
+			return;
+		}
+		echo '<div class="notice notice-error"><p><strong>Блокер за пускане.</strong> Попълнете контактите на услугата. София остава в списъците и на своя адрес, с бележка че контактите още липсват. Докато тествате, Contact Form 7 праща заявките до info@skaradzhov.com. Не се ползва номер от друга услуга, страницата не се трие и не се пренасочва.</p><ul>';
+		foreach ( $lines as $line ) {
+			echo '<li>' . esc_html( $line ) . '</li>';
+		}
+		echo '</ul></div>';
+	}
+
+	/**
 	 * General settings.
 	 */
 	public static function render_settings() {
@@ -208,7 +249,7 @@ class Admin {
 		Fields::input( 'mail_from_name', 'From име', (string) get_option( 'mytaxi_mail_from_name', '' ) );
 		Fields::end_section();
 		Fields::section( 'Примерно съдържание' );
-		Fields::checkbox( 'sample_content', 'Публичните текстове още са примерни', Data::is_sample(), 'Махнете отметката само след като текстовете са проверени и може да се скрие банерът.' );
+		Fields::checkbox( 'sample_content', 'Публичните текстове още са примерни', Data::is_sample(), 'Махнете отметката, когато текстовете са проверени за публикуване.' );
 		Fields::end_section();
 		submit_button( 'Запиши' );
 		echo '</form></div>';
@@ -226,12 +267,50 @@ class Admin {
 		if ( isset( $_GET['updated'] ) ) {
 			echo '<div class="notice notice-success"><p>Началната страница е обновена.</p></div>';
 		}
-		if ( $front ) {
-			echo '<p><a class="button" href="' . esc_url( get_edit_post_link( $front ) ) . '">Редактирай заглавие, описание, снимка и представяне</a></p>';
-		}
 		echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
 		echo '<input type="hidden" name="action" value="mytaxi_save_home">';
 		wp_nonce_field( 'mytaxi_save_home' );
+		Fields::section( 'Текстове на сайта', 'Кратките заглавия и описания. Празно поле връща текста по подразбиране. Телефоните и цените не се пишат тук.' );
+		$labels = array(
+			'home_kicker'             => 'Начало: надзаглавие',
+			'home_title'              => 'Начало: H1',
+			'home_lead'               => 'Начало: кратко описание',
+			'home_local_button'       => 'Начало: бутон за местно такси',
+			'home_airport_button'     => 'Начало: бутон за летищен трансфер',
+			'home_local_heading'      => 'Начало: заглавие на местните таксита',
+			'home_local_text'         => 'Начало: описание на местните таксита',
+			'home_airport_heading'    => 'Начало: заглавие на трансферите',
+			'home_airport_text'       => 'Начало: описание на трансферите',
+			'home_routes_heading'     => 'Начало: заглавие на маршрутите',
+			'home_routes_text'        => 'Начало: описание на маршрутите',
+			'home_cta_heading'        => 'Начало: финално заглавие',
+			'home_cta_text'           => 'Начало: финален текст',
+			'home_cta_button'         => 'Начало: финален бутон',
+			'local_heading'           => 'Местно такси: заглавие на списъка',
+			'local_text'              => 'Местно такси: описание на списъка',
+			'local_cta_heading'       => 'Местно такси: финално заглавие',
+			'local_cta_text'          => 'Местно такси: финален текст',
+			'airport_heading'         => 'Летище: заглавие на списъка',
+			'airport_text'            => 'Летище: описание на списъка',
+			'airport_cta_heading'     => 'Летище: финално заглавие',
+			'airport_cta_text'        => 'Летище: финален текст',
+			'routes_heading'          => 'Маршрути: заглавие на списъка',
+			'routes_text'             => 'Маршрути: описание на списъка',
+			'routes_cta_heading'      => 'Маршрути: финално заглавие',
+			'routes_cta_text'         => 'Маршрути: финален текст',
+			'contact_local_heading'   => 'Контакт: заглавие за местно такси',
+			'contact_local_text'      => 'Контакт: описание за местно такси',
+			'contact_airport_heading' => 'Контакт: заглавие за трансфер',
+			'contact_airport_text'    => 'Контакт: описание за трансфер',
+		);
+		$lines = Data::lines();
+		foreach ( $labels as $key => $label ) {
+			Fields::input( 'copy_' . $key, $label, $lines[ $key ] );
+		}
+		Fields::end_section();
+		if ( $front ) {
+			echo '<p><a class="button" href="' . esc_url( get_edit_post_link( $front ) ) . '">Редактирай заглавие, описание, снимка и представяне</a></p>';
+		}
 
 		Fields::section( 'Услуги', 'Картите четат телефона от самата услуга.' );
 		self::post_picker( 'service', 'mytaxi_service', '_mytaxi_show_home' );
@@ -330,6 +409,12 @@ class Admin {
 		update_option( 'mytaxi_home_benefits', Fields::encode_list( Fields::line_list( wp_unslash( $_POST['benefits'] ?? '' ) ) ), false );
 		update_option( 'mytaxi_home_reviews', Fields::encode_list( $reviews ), false );
 		update_option( 'mytaxi_home_faq', Fields::encode_list( $faqs ), false );
+
+		$copy = array();
+		foreach ( array_keys( Data::lines() ) as $key ) {
+			$copy[ $key ] = sanitize_text_field( wp_unslash( $_POST[ 'copy_' . $key ] ?? '' ) );
+		}
+		update_option( 'mytaxi_public_copy', $copy, false );
 
 		wp_safe_redirect( admin_url( 'admin.php?page=mytaxi-home&updated=1' ) );
 		exit;

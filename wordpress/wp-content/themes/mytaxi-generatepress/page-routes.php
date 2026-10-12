@@ -13,28 +13,24 @@ while ( have_posts() ) :
 	$routes = class_exists( '\MyTaxi\Core\Data' ) ? \MyTaxi\Core\Data::home_routes() : array();
 	mytaxi_breadcrumbs();
 	mytaxi_page_hero(
-		__( 'Airport routes', 'mytaxi-generatepress' ),
-		'taxi-golden-sands',
+		__( 'Our services', 'mytaxi-generatepress' ),
+		'varna-airport-transfers',
 		array(
 			array(
-				'label' => __( 'Airport transfers', 'mytaxi-generatepress' ),
-				'url'   => home_url( '/airport-transfers/' ),
+				'label' => __( 'Choose a destination', 'mytaxi-generatepress' ),
+				'url'   => '#routes',
 				'style' => 'yellow',
-				'icon'  => 'plane',
-			),
-			array(
-				'label' => __( 'Contact us', 'mytaxi-generatepress' ),
-				'url'   => home_url( '/contact/' ),
-				'style' => 'ghost',
 			),
 		)
 	);
 	if ( $routes ) :
 		?>
-		<section class="mt-section">
+		<section class="mt-section" id="routes">
 			<div class="mt-section__head">
-				<h2><?php esc_html_e( 'Choose a route', 'mytaxi-generatepress' ); ?></h2>
-				<p><?php esc_html_e( 'A price is shown only when it is confirmed.', 'mytaxi-generatepress' ); ?></p>
+				<h2><?php echo esc_html( mytaxi_line( 'routes_heading' ) ); ?></h2>
+				<?php if ( '' !== mytaxi_line( 'routes_text' ) ) : ?>
+					<p><?php echo esc_html( mytaxi_line( 'routes_text' ) ); ?></p>
+				<?php endif; ?>
 			</div>
 			<div class="mt-route-list">
 				<?php foreach ( $routes as $route ) : ?>
@@ -45,12 +41,12 @@ while ( have_posts() ) :
 		<?php
 	endif;
 	?>
-	<section class="mt-band">
+	<section class="mt-band mt-band--cta">
 		<div>
-			<h2><?php esc_html_e( 'Need a taxi while you are there?', 'mytaxi-generatepress' ); ?></h2>
-			<p><?php esc_html_e( 'Local taxi uses a different phone from the airport transfer.', 'mytaxi-generatepress' ); ?></p>
+			<h2><?php echo esc_html( mytaxi_line( 'routes_cta_heading' ) ); ?></h2>
+			<p><?php echo esc_html( mytaxi_line( 'routes_cta_text' ) ); ?></p>
 		</div>
-		<a class="mt-btn mt-btn--yellow" href="<?php echo esc_url( home_url( '/local-taxi/' ) ); ?>"><?php mytaxi_icon( 'car' ); ?><span><?php esc_html_e( 'Local taxi', 'mytaxi-generatepress' ); ?></span><?php mytaxi_icon( 'arrow' ); ?></a>
+		<a class="mt-btn mt-btn--yellow" href="<?php echo esc_url( home_url( '/contact/' ) ); ?>"><span><?php esc_html_e( 'Contact us', 'mytaxi-generatepress' ); ?></span><?php mytaxi_icon( 'arrow' ); ?></a>
 	</section>
 	<?php
 endwhile;
