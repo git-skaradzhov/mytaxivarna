@@ -365,15 +365,15 @@ function mytaxi_contact_actions( array $service, $call_label = '' ) {
 function mytaxi_contact_buttons( array $service ) {
 	$contacts = $service['contacts'] ?? array();
 	if ( ! empty( $contacts['whatsapp_url'] ) ) {
-		echo '<a class="mt-btn mt-btn--yellow" href="' . esc_url( $contacts['whatsapp_url'] ) . '">WhatsApp</a>';
+		echo '<a class="mt-btn mt-btn--yellow mt-btn--channel" href="' . esc_url( $contacts['whatsapp_url'] ) . '">WhatsApp</a>';
 	}
 	if ( ! empty( $contacts['phone_href'] ) ) {
-		echo '<a class="mt-btn mt-btn--ghost" href="' . esc_url( $contacts['phone_href'] ) . '">';
+		echo '<a class="mt-btn mt-btn--ghost mt-btn--channel" href="' . esc_url( $contacts['phone_href'] ) . '">';
 		mytaxi_icon( 'phone' );
 		echo '<span>' . esc_html__( 'Call', 'mytaxi-generatepress' ) . '</span></a>';
 	}
 	if ( ! empty( $contacts['viber_url'] ) ) {
-		echo '<a class="mt-btn mt-btn--ghost" href="' . esc_url( $contacts['viber_url'] ) . '">Viber</a>';
+		echo '<a class="mt-btn mt-btn--ghost mt-btn--channel" href="' . esc_url( $contacts['viber_url'] ) . '">Viber</a>';
 	}
 	mytaxi_location_button( $service );
 }

@@ -152,6 +152,8 @@ class Data {
 			'gallery'     => array_values( array_filter( array_map( 'intval', Fields::decode_list( get_post_meta( $id, '_mytaxi_gallery', true ) ) ) ) ),
 			'content'     => $post->post_content,
 			'image_id'    => (int) get_post_thumbnail_id( $post ),
+			'vehicle_id'   => (int) get_post_meta( $id, '_mytaxi_vehicle_id', true ),
+			'vehicle_4_id' => (int) get_post_meta( $id, '_mytaxi_vehicle_4_id', true ),
 			'meta_title'  => (string) get_post_meta( $id, '_mytaxi_meta_title', true ),
 			'meta_desc'   => (string) get_post_meta( $id, '_mytaxi_meta_description', true ),
 			'sample'      => '1' === (string) get_post_meta( $id, '_mytaxi_sample', true ),

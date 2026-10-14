@@ -52,7 +52,7 @@ while ( have_posts() ) :
 	<?php endif; ?>
 
 	<div class="mt-split">
-		<div>
+		<div class="mt-stack">
 			<?php if ( get_the_content() ) : ?>
 				<div class="mt-prose"><?php the_content(); ?></div>
 			<?php endif; ?>
@@ -90,6 +90,8 @@ while ( have_posts() ) :
 			<?php get_template_part( 'template-parts/inquiry-form', null, array( 'service_id' => get_the_ID(), 'route_id' => 0 ) ); ?>
 		</aside>
 	</div>
+
+	<?php get_template_part( 'template-parts/transfer-vehicle', null, array( 'service' => $service ) ); ?>
 
 	<?php if ( $transfer ) : ?>
 		<section class="mt-band mt-band--photo">

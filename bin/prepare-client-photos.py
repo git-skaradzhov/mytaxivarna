@@ -29,6 +29,7 @@ CROP_Y = {
     "golden-sands-taxi-seaside-dusk": 1550,
     "golden-sands-taxi-international-side": 1500,
     "albena-taxi-arched-building": 1450,
+    "albena-taxi-seaside": 1620,
     "albena-taxi-flamingo-grand": 1500,
     "albena-taxi-glass-hotel-dusk": 1450,
     "albena-taxi-street-dusk": 1550,
@@ -39,6 +40,9 @@ CROP_Y = {
     "varna-airport-transfer-car-with-person": 1400,
     "taxi-fortress-gate-coast": 1400,
     "taxi-fortress-gate-coast-front": 1450,
+    "kranevo-taxi-veramar-beach": 1740,
+    "transfer-up-to-5-passengers": 1200,
+    "sofia-transfer-up-to-5-passengers": 1260,
 }
 
 
@@ -85,6 +89,7 @@ def main():
             "stem": "golden-sands-taxi-admiral",
             "alt": "Taxi vehicle outside Hotel Admiral",
             "gallery": {"taxi-golden-sands": 10},
+            "vehicle_4": ["varna-airport-transfers"],
         },
         {
             "source": "goldensands/20260721_160016.jpg",
@@ -105,10 +110,16 @@ def main():
             "gallery": {"taxi-golden-sands": 40},
         },
         {
+            "source": "albena/20200713_151200.jpg",
+            "stem": "albena-taxi-seaside",
+            "alt": "Yellow taxi on a tree-lined street beside the sea",
+            "featured": ["taxi-albena"],
+        },
+        {
             "source": "albena/20260620_154726.jpg",
             "stem": "albena-taxi-arched-building",
             "alt": "Taxi vehicle in front of a white arched building with the Nona sign",
-            "featured": ["taxi-albena", "varna-airport-to-albena"],
+            "featured": ["varna-airport-to-albena"],
         },
         {
             "source": "albena/20260613_165435.jpg",
@@ -167,6 +178,25 @@ def main():
             "caption": "Location is not confirmed. Not published.",
         },
         {
+            "source": "kranevo/20250822_140742.jpg",
+            "stem": "kranevo-taxi-veramar-beach",
+            "alt": "Taxi vehicle outside the Veramar Beach building",
+            "featured": ["taxi-kranevo"],
+            "revision": "3x2-3",
+        },
+        {
+            "source": "transfers/20250618_193248.jpg",
+            "stem": "transfer-up-to-5-passengers",
+            "alt": "Yellow taxi vehicle for a transfer of up to 5 passengers",
+            "vehicle": ["varna-airport-transfers"],
+        },
+        {
+            "source": "sofia/20250830_185406.jpg",
+            "stem": "sofia-transfer-up-to-5-passengers",
+            "alt": "Yellow taxi vehicle for a Sofia Airport transfer of up to 5 passengers",
+            "vehicle": ["sofia-airport-transfers"],
+        },
+        {
             "source": "albena/20260802_163632.jpg",
             "stem": "taxi-fortress-gate-coast-front",
             "alt": "Taxi vehicle beside a stone fortress gate on the coast",
@@ -203,12 +233,14 @@ def main():
                 "review": item.get("review", ""),
                 "featured": item.get("featured", []),
                 "gallery": item.get("gallery", {}),
+                "vehicle": item.get("vehicle", []),
+                "vehicle_4": item.get("vehicle_4", []),
                 "jpeg_bytes": jpeg.stat().st_size,
                 "webp_bytes": webp.stat().st_size,
                 "card_jpeg_bytes": card_jpeg.stat().st_size,
                 "card_webp_bytes": card_webp.stat().st_size,
                 "quality": quality,
-                "revision": "3x2-1",
+                "revision": item.get("revision", "3x2-1"),
             }
         )
         print(

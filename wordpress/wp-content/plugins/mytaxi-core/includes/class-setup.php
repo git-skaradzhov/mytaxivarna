@@ -420,6 +420,27 @@ class Setup {
 			'varna-airport-transfers' => '+359888850884',
 			'sofia-airport-transfers' => '+359886330192',
 		);
+		foreach ( array( 'varna-airport-transfers', 'sofia-airport-transfers' ) as $transfer_slug ) {
+			$transfer = self::find( 'mytaxi_service', $transfer_slug );
+			if ( ! $transfer ) {
+				continue;
+			}
+			$transfer_routes = get_posts(
+				array(
+					'post_type'      => 'mytaxi_route',
+					'post_status'    => 'publish',
+					'posts_per_page' => 20,
+					'meta_key'       => '_mytaxi_service_id',
+					'meta_value'     => (string) $transfer->ID,
+					'no_found_rows'  => true,
+				)
+			);
+			foreach ( $transfer_routes as $transfer_route ) {
+				if ( '' === (string) get_post_meta( $transfer_route->ID, '_mytaxi_capacity', true ) ) {
+					update_post_meta( $transfer_route->ID, '_mytaxi_capacity', 'Up to 5 passengers' );
+				}
+			}
+		}
 		$local_terms = 'Open every day, 24 hours. A child seat is free when you ask for it before the journey.';
 		$hours_only  = 'Open every day, 24 hours.';
 		$transfer_terms = 'The fare is a fixed price for the car, not for each person. It covers a one-way transfer, and the return is the same price for that route. A delayed flight does not add a waiting charge. Please book at least one day before the flight. The request is confirmed after the price is agreed and you give one passenger’s name and the flight number. The driver meets you in the arrivals hall with a name sign. You do not pay in advance. You pay the driver in cash or by card when the transfer is done. You can cancel at any time with no charge. A child seat is free when you ask for it with the booking. We confirm whether a seat is available and do not promise a particular seat. The service is available every day, 24 hours.';

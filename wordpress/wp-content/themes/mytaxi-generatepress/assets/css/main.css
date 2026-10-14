@@ -596,6 +596,10 @@ body.mytaxi :focus-visible {
   list-style: none;
 }
 
+.mt-hero + .mt-facts--row {
+  margin-top: 48px;
+}
+
 .mt-facts--row li,
 .mt-facts div,
 .mt-panel {
@@ -626,8 +630,18 @@ body.mytaxi :focus-visible {
 
 .mt-split {
   display: grid;
-  gap: 1rem;
-  margin-top: 1.4rem;
+  gap: 48px;
+  margin-top: 48px;
+}
+
+.mt-stack {
+  display: grid;
+  align-content: start;
+  gap: 48px;
+}
+
+.mt-stack > .mt-section {
+  margin-top: 0;
 }
 
 .mt-panel,
@@ -1071,10 +1085,13 @@ body.mytaxi .site-footer {
   }
 
   .mt-hero,
-  .mt-split,
   .mt-band--photo {
     grid-template-columns: 1.08fr 0.92fr;
     gap: 1.6rem;
+  }
+
+  .mt-split {
+    grid-template-columns: 1.08fr 0.92fr;
   }
 
   .mt-hero {
@@ -1219,6 +1236,14 @@ body.mytaxi .site-footer {
     opacity: 1;
     transform: none;
     pointer-events: auto;
+  }
+
+  .mt-hero .mt-btn--channel {
+    display: none;
+  }
+
+  .mt-hero .mt-actions:not(:has(.mt-btn:not(.mt-btn--channel))) {
+    display: none;
   }
 
   .mt-actions {
@@ -1476,6 +1501,25 @@ body.mytaxi :focus-visible {
 .mt-hero__media img,
 .mt-band__media img {
   aspect-ratio: 3 / 2;
+}
+
+.mt-vehicles {
+  display: grid;
+  gap: 32px;
+}
+
+.mt-vehicle__media {
+  max-width: 720px;
+  overflow: hidden;
+  border-radius: 22px;
+}
+
+.mt-vehicle__media img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 3 / 2;
+  object-fit: cover;
 }
 
 .mt-places .mt-place > a {
@@ -1804,6 +1848,16 @@ form.wpcf7-form.mt-form input[type="time"] {
     gap: 48px;
   }
 
+  .mt-vehicles--pair {
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+    align-items: start;
+  }
+
+  .mt-vehicles--pair .mt-vehicle__media {
+    max-width: none;
+  }
+
   .mt-hero__media--home {
     position: relative;
     width: calc(100% + (100vw - min(1200px, 100vw - 64px)) / 2);
@@ -1854,6 +1908,15 @@ form.wpcf7-form.mt-form input[type="time"] {
     grid-template-columns: minmax(0, 688px) 488px;
     gap: 24px;
     align-items: start;
+    margin-top: 64px;
+  }
+
+  .mt-stack {
+    gap: 64px;
+  }
+
+  .mt-hero + .mt-facts--row {
+    margin-top: 64px;
   }
 
   .mt-form-card {

@@ -311,6 +311,12 @@ class Cli {
 			foreach ( (array) ( $item['featured'] ?? array() ) as $target ) {
 				self::assign_featured( (string) $target, $id );
 			}
+			foreach ( (array) ( $item['vehicle'] ?? array() ) as $slug ) {
+				self::assign_vehicle( (string) $slug, $id, '_mytaxi_vehicle_id' );
+			}
+			foreach ( (array) ( $item['vehicle_4'] ?? array() ) as $slug ) {
+				self::assign_vehicle( (string) $slug, $id, '_mytaxi_vehicle_4_id' );
+			}
 			foreach ( (array) ( $item['gallery'] ?? array() ) as $slug => $order ) {
 				$galleries[ (string) $slug ][ (int) $order ] = $id;
 			}
@@ -462,6 +468,26 @@ class Cli {
 			return;
 		}
 		set_post_thumbnail( $post_id, $attachment_id );
+	}
+
+	/**
+	 * Attach the confirmed transfer vehicle without replacing the place photo.
+	 *
+	 * @param string $slug Service slug.
+	 * @param int    $attachment_id Attachment ID.
+	 * @param string $meta_key Vehicle meta key.
+	 */
+	private static function assign_vehicle( $slug, $attachment_id, $meta_key ) {
+		$post = self::find_record( $slug );
+		if ( ! $post || 'mytaxi_service' !== $post->post_type ) {
+			\WP_CLI::warning( 'Missing vehicle target ' . $slug );
+			return;
+		}
+		$current = (int) get_post_meta( $post->ID, $meta_key, true );
+		if ( $current && ! get_post_meta( $current, '_mytaxi_source', true ) ) {
+			return;
+		}
+		update_post_meta( $post->ID, $meta_key, (string) $attachment_id );
 	}
 
 	/**

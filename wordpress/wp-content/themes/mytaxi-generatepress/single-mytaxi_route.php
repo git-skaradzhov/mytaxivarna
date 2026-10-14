@@ -42,7 +42,7 @@ while ( have_posts() ) :
 	</header>
 
 	<div class="mt-split">
-		<div>
+		<div class="mt-stack">
 			<section class="mt-panel">
 				<h2><?php esc_html_e( 'Your transfer, step by step', 'mytaxi-generatepress' ); ?></h2>
 				<ol class="mt-steps">
@@ -131,6 +131,8 @@ while ( have_posts() ) :
 			?>
 		</aside>
 	</div>
+
+	<?php get_template_part( 'template-parts/transfer-vehicle', null, array( 'service' => $service ) ); ?>
 
 	<?php
 	$vehicle_id = (int) ( $service['image_id'] ?? 0 );
