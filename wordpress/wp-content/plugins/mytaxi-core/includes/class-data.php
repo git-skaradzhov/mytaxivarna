@@ -145,6 +145,7 @@ class Data {
 			'intro'       => (string) get_post_meta( $id, '_mytaxi_intro', true ),
 			'cta'         => (string) get_post_meta( $id, '_mytaxi_cta', true ),
 			'areas'       => array_values( array_filter( array_map( 'strval', $areas ) ) ),
+			'hours'       => (string) get_post_meta( $id, '_mytaxi_hours', true ),
 			'terms'       => (string) get_post_meta( $id, '_mytaxi_terms', true ),
 			'benefits'    => array_values( array_filter( array_map( 'strval', $benefits ) ) ),
 			'faqs'        => self::faqs( get_post_meta( $id, '_mytaxi_faq', true ) ),

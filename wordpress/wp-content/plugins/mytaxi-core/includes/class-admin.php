@@ -193,21 +193,22 @@ class Admin {
 		);
 		$lines = array();
 		foreach ( $posts as $post ) {
-			$missing = array();
 			if ( '' === (string) get_post_meta( $post->ID, '_mytaxi_phone', true ) ) {
-				$missing[] = 'телефон';
+				$lines[] = get_the_title( $post ) . ' — липсва телефон';
 			}
-			if ( '' === Fields::email( (string) get_post_meta( $post->ID, '_mytaxi_email', true ) ) ) {
-				$missing[] = 'имейл за заявки';
-			}
-			if ( $missing ) {
-				$lines[] = get_the_title( $post ) . ' — липсва ' . implode( ' и ', $missing );
+		}
+		if ( class_exists( '\MyTaxi\Core\ContactForm' ) ) {
+			if ( 'test' === \MyTaxi\Core\ContactForm::mail_mode() ) {
+				$test = \MyTaxi\Core\ContactForm::test_recipient();
+				echo '<div class="notice notice-warning"><p>Тестовият режим е включен. Заявките ' . ( '' !== $test ? 'отиват само до ' . esc_html( $test ) : 'не се изпращат, защото тестовият адрес е празен' ) . '. Това не е production получателят.</p></div>';
+			} elseif ( '' === \MyTaxi\Core\ContactForm::production_recipient() ) {
+				echo '<div class="notice notice-warning"><p>Няма production имейл за заявките. Формите не се изпращат и не използват тестов адрес. Посетителят вижда WhatsApp и обаждане за съответната услуга. Запишете общия адрес или включете тестовия режим от Общи настройки.</p></div>';
 			}
 		}
 		if ( ! $lines ) {
 			return;
 		}
-		echo '<div class="notice notice-error"><p><strong>Блокер за пускане.</strong> Попълнете контактите на услугата. София остава в списъците и на своя адрес, с бележка че контактите още липсват. Докато тествате, Contact Form 7 праща заявките до info@skaradzhov.com. Не се ползва номер от друга услуга, страницата не се трие и не се пренасочва.</p><ul>';
+		echo '<div class="notice notice-error"><p><strong>Блокер за пускане.</strong> Попълнете телефона на услугата. Не се ползва номер от друга услуга.</p><ul>';
 		foreach ( $lines as $line ) {
 			echo '<li>' . esc_html( $line ) . '</li>';
 		}
@@ -244,7 +245,10 @@ class Admin {
 			Fields::input( 'social_' . $key, $label, (string) ( $social[ $key ] ?? '' ), '', 'url' );
 		}
 		Fields::end_section();
-		Fields::section( 'Поща за заявки', 'From адресът е фиксиран адрес на сайта. Reply-To става имейлът на клиента, когато е валиден.' );
+		Fields::section( 'Поща за заявки', 'Всички форми използват един общ адрес. Production и тестовият режим са отделни. Празен production адрес не праща към тестовия. From е техническият адрес на сайта. Reply-To става имейлът на клиента, когато е валиден.' );
+		Fields::checkbox( 'mail_test_mode', 'Тестов режим', 'test' === (string) get_option( 'mytaxi_mail_mode', 'production' ), 'Включете го само докато проверявате изпращането. Без отметка се ползва само общият имейл.' );
+		Fields::input( 'test_email', 'Тестов имейл', (string) get_option( 'mytaxi_test_email', '' ), 'Само при включен тестов режим.', 'email' );
+		Fields::input( 'request_email', 'Общ имейл за заявки', (string) get_option( 'mytaxi_request_email', '' ), 'Реалният адрес за всички услуги. Клиентът още не го е изпратил.', 'email' );
 		Fields::input( 'mail_from', 'From имейл', (string) get_option( 'mytaxi_mail_from', '' ), 'Използвайте пощенска кутия на домейна, от който се изпраща пощата.', 'email' );
 		Fields::input( 'mail_from_name', 'From име', (string) get_option( 'mytaxi_mail_from_name', '' ) );
 		Fields::end_section();
@@ -380,6 +384,9 @@ class Admin {
 		}
 		update_option( 'mytaxi_company', $company, false );
 		update_option( 'mytaxi_social', $social, false );
+		update_option( 'mytaxi_mail_mode', isset( $_POST['mail_test_mode'] ) ? 'test' : 'production', false );
+		update_option( 'mytaxi_test_email', Fields::email( wp_unslash( $_POST['test_email'] ?? '' ) ), false );
+		update_option( 'mytaxi_request_email', Fields::email( wp_unslash( $_POST['request_email'] ?? '' ) ), false );
 		update_option( 'mytaxi_mail_from', Fields::email( wp_unslash( $_POST['mail_from'] ?? '' ) ), false );
 		update_option( 'mytaxi_mail_from_name', sanitize_text_field( wp_unslash( $_POST['mail_from_name'] ?? '' ) ), false );
 		update_option( 'mytaxi_sample_content', isset( $_POST['sample_content'] ) ? '1' : '0', false );

@@ -5,6 +5,7 @@
 *.zip
 wordpress/wp-config.php
 wordpress/wp-content/uploads/
+wordpress/wp-content/mytaxi-photo-import/
 wordpress/wp-content/upgrade/
 wordpress/wp-content/cache/
 wordpress/wp-content/debug.log

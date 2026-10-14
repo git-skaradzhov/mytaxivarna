@@ -187,24 +187,6 @@ function mytaxi_theme_photos() {
 function mytaxi_photo_credits() {
 	return array(
 		array(
-			'label'   => 'Albena coast',
-			'author'  => 'karel291',
-			'license' => 'CC BY 3.0',
-			'url'     => 'https://commons.wikimedia.org/wiki/File:Albena,_Bulgaria_-_panoramio_(4).jpg',
-		),
-		array(
-			'label'   => 'Albena beach',
-			'author'  => 'bdmundo.com',
-			'license' => 'CC BY-SA 2.0',
-			'url'     => 'https://commons.wikimedia.org/wiki/File:Albena_Resort,_Bulgaria_(18552467973).jpg',
-		),
-		array(
-			'label'   => 'Golden Sands',
-			'author'  => 'Avishai Teicher',
-			'license' => 'Public domain',
-			'url'     => 'https://commons.wikimedia.org/wiki/File:Golden_sands_beach_Varna,_Bulgaria.jpg',
-		),
-		array(
 			'label'   => 'Kranevo',
 			'author'  => 'Dziadzik',
 			'license' => 'CC BY-SA 3.0',
@@ -215,12 +197,6 @@ function mytaxi_photo_credits() {
 			'author'  => 'Ali Burçin Titizel',
 			'license' => 'CC BY 2.0',
 			'url'     => 'https://commons.wikimedia.org/wiki/File:Balchik_coast,_Bulgaria.jpg',
-		),
-		array(
-			'label'   => 'Varna Airport',
-			'author'  => 'Meliha Kasacheva',
-			'license' => 'CC BY-SA 3.0',
-			'url'     => 'https://commons.wikimedia.org/wiki/File:VAR_RWY.jpg',
 		),
 		array(
 			'label'   => 'Sofia Airport',
@@ -242,7 +218,7 @@ function mytaxi_photo_credits() {
 function mytaxi_picture( $slug, $attachment_id, $fallback_alt, $eager = false ) {
 	$attachment_id = (int) $attachment_id;
 	if ( $attachment_id ) {
-		mytaxi_image( $attachment_id, 'mytaxi-card', $fallback_alt, $eager );
+		mytaxi_image( $attachment_id, $eager ? 'mytaxi-hero' : 'mytaxi-card', $fallback_alt, $eager );
 		return;
 	}
 	$photos = mytaxi_theme_photos();
@@ -382,6 +358,45 @@ function mytaxi_contact_actions( array $service, $call_label = '' ) {
 }
 
 /**
+ * WhatsApp, call, and Viber for one service. WhatsApp is the primary button.
+ *
+ * @param array<string,mixed> $service Service.
+ */
+function mytaxi_contact_buttons( array $service ) {
+	$contacts = $service['contacts'] ?? array();
+	if ( ! empty( $contacts['whatsapp_url'] ) ) {
+		echo '<a class="mt-btn mt-btn--yellow" href="' . esc_url( $contacts['whatsapp_url'] ) . '">WhatsApp</a>';
+	}
+	if ( ! empty( $contacts['phone_href'] ) ) {
+		echo '<a class="mt-btn mt-btn--ghost" href="' . esc_url( $contacts['phone_href'] ) . '">';
+		mytaxi_icon( 'phone' );
+		echo '<span>' . esc_html__( 'Call', 'mytaxi-generatepress' ) . '</span></a>';
+	}
+	if ( ! empty( $contacts['viber_url'] ) ) {
+		echo '<a class="mt-btn mt-btn--ghost" href="' . esc_url( $contacts['viber_url'] ) . '">Viber</a>';
+	}
+	mytaxi_location_button( $service );
+}
+
+/**
+ * Kranevo sends the visitor location to that service's own WhatsApp number.
+ *
+ * @param array<string,mixed> $service Service.
+ */
+function mytaxi_location_button( array $service ) {
+	if ( 'taxi-kranevo' !== (string) ( $service['slug'] ?? '' ) ) {
+		return;
+	}
+	$number = ltrim( (string) ( $service['contacts']['whatsapp'] ?? '' ), '+' );
+	if ( '' === $number ) {
+		return;
+	}
+	echo '<button type="button" class="mt-btn mt-btn--ghost" data-send-location data-whatsapp="' . esc_attr( $number ) . '">';
+	mytaxi_icon( 'pin' );
+	echo '<span>' . esc_html__( 'Send location', 'mytaxi-generatepress' ) . '</span></button>';
+}
+
+/**
  * Responsive image with a stable frame.
  *
  * @param int    $attachment_id Attachment ID.
@@ -394,9 +409,16 @@ function mytaxi_image( $attachment_id, $size, $fallback_alt, $eager = false ) {
 	if ( ! $attachment_id ) {
 		return;
 	}
+	$meta = wp_get_attachment_metadata( $attachment_id );
+	$wide = (int) ( $meta['width'] ?? 0 );
+	$high = (int) ( $meta['height'] ?? 0 );
 	$alt  = (string) get_post_meta( $attachment_id, '_wp_attachment_image_alt', true );
+	$sizes = $eager
+		? '(min-width: 1024px) 576px, calc(100vw - 48px)'
+		: '(min-width: 1024px) 384px, calc(100vw - 48px)';
 	$attr = array(
-		'class' => 'mt-img',
+		'class' => 'mt-img' . ( $high > $wide ? ' mt-img--tall' : '' ),
+		'sizes' => $sizes,
 	);
 	if ( '' === $alt ) {
 		$attr['alt'] = $fallback_alt;
@@ -404,8 +426,23 @@ function mytaxi_image( $attachment_id, $size, $fallback_alt, $eager = false ) {
 	if ( $eager ) {
 		$attr['loading']       = 'eager';
 		$attr['fetchpriority'] = 'high';
+	} else {
+		$attr['loading'] = 'lazy';
 	}
-	echo wp_get_attachment_image( $attachment_id, $size, false, $attr );
+	$html = wp_get_attachment_image( $attachment_id, $size, false, $attr );
+	$webp = (string) get_post_meta( $attachment_id, '_mytaxi_webp', true );
+	if ( '' === $webp ) {
+		echo $html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+		return;
+	}
+	$uploads = wp_get_upload_dir();
+	$rev     = rawurlencode( (string) get_post_meta( $attachment_id, '_mytaxi_revision', true ) );
+	$srcset  = esc_url( $uploads['baseurl'] . '/' . $webp . ( '' !== $rev ? '?rev=' . $rev : '' ) ) . ' ' . max( 1, (int) get_post_meta( $attachment_id, '_mytaxi_webp_width', true ) ) . 'w';
+	$card    = (string) get_post_meta( $attachment_id, '_mytaxi_webp_card', true );
+	if ( '' !== $card ) {
+		$srcset .= ', ' . esc_url( $uploads['baseurl'] . '/' . $card . ( '' !== $rev ? '?rev=' . $rev : '' ) ) . ' ' . max( 1, (int) get_post_meta( $attachment_id, '_mytaxi_webp_card_width', true ) ) . 'w';
+	}
+	echo '<picture><source type="image/webp" srcset="' . $srcset . '" sizes="' . esc_attr( $sizes ) . '">' . $html . '</picture>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 }
 
 /**

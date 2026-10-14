@@ -205,14 +205,19 @@ function mytaxi_mobile_bar() {
 	}
 	$service = mytaxi_current_service();
 	echo '<div class="mt-mobile-bar" data-mobile-bar>';
+	if ( $service && ! empty( $service['contacts']['whatsapp_url'] ) ) {
+		echo '<a class="mt-btn mt-btn--yellow" href="' . esc_url( $service['contacts']['whatsapp_url'] ) . '">WhatsApp</a>';
+	}
 	if ( $service && ! empty( $service['contacts']['phone_href'] ) ) {
-		echo '<a class="mt-btn mt-btn--yellow" href="' . esc_url( $service['contacts']['phone_href'] ) . '">';
+		echo '<a class="mt-btn mt-btn--ghost" href="' . esc_url( $service['contacts']['phone_href'] ) . '">';
 		mytaxi_icon( 'phone' );
 		echo '<span>' . esc_html__( 'Call', 'mytaxi-generatepress' ) . '</span></a>';
 	}
-	if ( $service && ! empty( $service['contacts']['whatsapp_url'] ) ) {
-		echo '<a class="mt-btn mt-btn--ghost" href="' . esc_url( $service['contacts']['whatsapp_url'] ) . '">WhatsApp</a>';
+	if ( $service && ! empty( $service['contacts']['viber_url'] ) ) {
+		echo '<a class="mt-btn mt-btn--ghost" href="' . esc_url( $service['contacts']['viber_url'] ) . '">Viber</a>';
 	}
-	echo '<a class="mt-btn mt-btn--ghost" href="#request"><span>' . esc_html__( 'Request', 'mytaxi-generatepress' ) . '</span></a>';
+	if ( $service && empty( $service['contacts']['whatsapp_url'] ) ) {
+		echo '<a class="mt-btn mt-btn--ghost" href="#request"><span>' . esc_html__( 'Request', 'mytaxi-generatepress' ) . '</span></a>';
+	}
 	echo '</div>';
 }

@@ -123,6 +123,32 @@
     box.replaceChildren(note, list);
   });
 
+  document.querySelectorAll('[data-send-location]').forEach(function (button) {
+    button.addEventListener('click', function () {
+      var number = button.getAttribute('data-whatsapp');
+      if (!number) {
+        return;
+      }
+      var openChat = function (text) {
+        window.location.href = 'https://wa.me/' + number + '?text=' + encodeURIComponent(text);
+      };
+      if (!navigator.geolocation) {
+        openChat('I need a taxi in Kranevo. I will share my location in this chat.');
+        return;
+      }
+      button.disabled = true;
+      navigator.geolocation.getCurrentPosition(function (position) {
+        button.disabled = false;
+        var lat = position.coords.latitude.toFixed(6);
+        var lng = position.coords.longitude.toFixed(6);
+        openChat('I need a taxi in Kranevo. My location: https://maps.google.com/?q=' + lat + ',' + lng);
+      }, function () {
+        button.disabled = false;
+        openChat('I need a taxi in Kranevo. I will share my location in this chat.');
+      }, { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 });
+    });
+  });
+
   document.addEventListener('submit', function (event) {
     var form = event.target;
     if (!form.classList || !form.classList.contains('mt-form') || form.classList.contains('wpcf7-form')) {

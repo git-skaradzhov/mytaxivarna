@@ -8,6 +8,7 @@ http://taxikranevo.com/,https://mytaxivarna.com/taxi-kranevo/,301,HTTP goes dire
 https://www.taxikranevo.com/,https://mytaxivarna.com/taxi-kranevo/,301,www goes directly to the final URL,prepared_not_activated
 http://www.taxikranevo.com/,https://mytaxivarna.com/taxi-kranevo/,301,www HTTP goes directly to the final URL,prepared_not_activated
 https://airporttaxitransfersvarna.com/,https://mytaxivarna.com/varna-airport-transfers/,301,Old domain opens Varna Airport Transfers directly,prepared_not_activated
+https://airporttaxitransferssofia.com/,https://mytaxivarna.com/sofia-airport-transfers/,301,New Sofia domain is not registered yet and must be checked before purchase,decision_required
 http://airporttaxitransfersvarna.com/,https://mytaxivarna.com/varna-airport-transfers/,301,HTTP goes directly to the final URL,prepared_not_activated
 https://www.airporttaxitransfersvarna.com/,https://mytaxivarna.com/varna-airport-transfers/,301,www goes directly to the final URL,prepared_not_activated
 http://www.airporttaxitransfersvarna.com/,https://mytaxivarna.com/varna-airport-transfers/,301,www HTTP goes directly to the final URL,prepared_not_activated

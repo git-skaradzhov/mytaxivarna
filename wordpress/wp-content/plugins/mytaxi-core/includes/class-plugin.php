@@ -20,6 +20,13 @@ class Plugin {
 	public static function boot() {
 		add_action( 'init', array( __CLASS__, 'load_textdomain' ) );
 		add_filter( 'determine_locale', array( __CLASS__, 'locale' ) );
+		add_filter(
+			'kses_allowed_protocols',
+			static function ( $protocols ) {
+				$protocols[] = 'viber';
+				return $protocols;
+			}
+		);
 
 		PostTypes::boot();
 		Routing::boot();

@@ -26,16 +26,9 @@ while ( have_posts() ) :
 				<p class="mt-phone"><a href="<?php echo esc_url( $service['contacts']['phone_href'] ); ?>"><?php mytaxi_icon( 'phone' ); ?><span><?php echo esc_html( mytaxi_phone_text( $phone ) ); ?></span></a></p>
 			<?php endif; ?>
 			<div class="mt-actions">
+				<?php mytaxi_contact_buttons( $service ); ?>
 				<?php if ( $airport ) : ?>
-					<a class="mt-btn mt-btn--yellow" href="#request"><span><?php esc_html_e( 'Request a quote', 'mytaxi-generatepress' ); ?></span><?php mytaxi_icon( 'arrow' ); ?></a>
-				<?php elseif ( $phone ) : ?>
-					<a class="mt-btn mt-btn--yellow" href="<?php echo esc_url( $service['contacts']['phone_href'] ); ?>"><?php mytaxi_icon( 'phone' ); ?><span><?php echo esc_html( sprintf( __( 'Call %s', 'mytaxi-generatepress' ), get_the_title() ) ); ?></span></a>
-				<?php endif; ?>
-				<?php if ( ! empty( $service['contacts']['whatsapp_url'] ) ) : ?>
-					<a class="mt-btn mt-btn--ghost" href="<?php echo esc_url( $service['contacts']['whatsapp_url'] ); ?>">WhatsApp</a>
-				<?php endif; ?>
-				<?php if ( ! empty( $service['contacts']['viber_url'] ) ) : ?>
-					<a class="mt-btn mt-btn--ghost" href="<?php echo esc_url( $service['contacts']['viber_url'] ); ?>">Viber</a>
+					<a class="mt-btn mt-btn--ghost" href="#request"><span><?php esc_html_e( 'Request a quote', 'mytaxi-generatepress' ); ?></span><?php mytaxi_icon( 'arrow' ); ?></a>
 				<?php endif; ?>
 			</div>
 		</div>
@@ -51,6 +44,9 @@ while ( have_posts() ) :
 			<?php endif; ?>
 			<?php if ( $phone ) : ?>
 				<li><?php mytaxi_icon( 'phone' ); ?><span><strong><?php esc_html_e( 'Phone', 'mytaxi-generatepress' ); ?></strong><a href="<?php echo esc_url( $service['contacts']['phone_href'] ); ?>"><?php echo esc_html( mytaxi_phone_text( $phone ) ); ?></a></span></li>
+			<?php endif; ?>
+			<?php if ( ! empty( $service['hours'] ) ) : ?>
+				<li><span><strong><?php esc_html_e( 'Hours', 'mytaxi-generatepress' ); ?></strong><?php echo esc_html( $service['hours'] ); ?></span></li>
 			<?php endif; ?>
 		</ul>
 	<?php endif; ?>
@@ -77,7 +73,7 @@ while ( have_posts() ) :
 
 			<?php if ( ! empty( $service['benefits'] ) ) : ?>
 				<section class="mt-section">
-					<h2><?php esc_html_e( 'Confirmed details', 'mytaxi-generatepress' ); ?></h2>
+					<h2><?php esc_html_e( 'How it works', 'mytaxi-generatepress' ); ?></h2>
 					<ul class="mt-list">
 						<?php foreach ( $service['benefits'] as $benefit ) : ?>
 							<li><?php echo esc_html( $benefit ); ?></li>
@@ -88,7 +84,9 @@ while ( have_posts() ) :
 		</div>
 		<aside class="mt-form-card" id="request">
 			<h2><?php echo esc_html( $airport ? __( 'Request your transfer', 'mytaxi-generatepress' ) : __( 'Request a local taxi', 'mytaxi-generatepress' ) ); ?></h2>
-			<p><?php echo esc_html( $airport ? __( 'Send your details. We’ll confirm availability and your quote.', 'mytaxi-generatepress' ) : __( 'Send your details. We’ll confirm availability with you.', 'mytaxi-generatepress' ) ); ?></p>
+			<?php if ( class_exists( '\MyTaxi\Core\ContactForm' ) && \MyTaxi\Core\ContactForm::can_send() ) : ?>
+				<p><?php echo esc_html( $airport ? __( 'This form asks for a quote. It does not confirm the transfer.', 'mytaxi-generatepress' ) : __( 'This form asks for a car. It does not confirm the journey.', 'mytaxi-generatepress' ) ); ?></p>
+			<?php endif; ?>
 			<?php get_template_part( 'template-parts/inquiry-form', null, array( 'service_id' => get_the_ID(), 'route_id' => 0 ) ); ?>
 		</aside>
 	</div>

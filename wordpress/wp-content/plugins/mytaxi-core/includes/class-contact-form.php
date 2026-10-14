@@ -10,12 +10,11 @@ namespace MyTaxi\Core;
 defined( 'ABSPATH' ) || exit;
 
 /**
- * Renders the public request forms and sends them to the test inbox.
+ * Renders the public request forms and sends them to one shared inbox.
  */
 class ContactForm {
 
-	const RECIPIENT = 'info@skaradzhov.com';
-	const REVISION  = '3';
+	const REVISION = '4';
 
 	/**
 	 * Context of the submission currently being mailed.
@@ -32,6 +31,7 @@ class ContactForm {
 		add_filter( 'wpcf7_mail_components', array( __CLASS__, 'mail_components' ), 10, 2 );
 		add_filter( 'wpcf7_special_mail_tags', array( __CLASS__, 'mail_tags' ), 10, 3 );
 		add_action( 'wpcf7_before_send_mail', array( __CLASS__, 'before_send' ), 10, 3 );
+		add_action( 'wpcf7_mail_sent', array( __CLASS__, 'remember_sent' ) );
 		add_filter( 'wpcf7_skip_mail', array( __CLASS__, 'skip_honeypot' ), 10, 2 );
 		add_filter( 'wpcf7_form_tag', array( __CLASS__, 'prefill' ), 10, 2 );
 		add_filter( 'wpcf7_validate_tel', array( __CLASS__, 'validate_phone' ), 20, 2 );
@@ -69,12 +69,63 @@ class ContactForm {
 			$form_id = (int) get_option( $option, 0 );
 			$form    = wpcf7_contact_form( $form_id );
 		}
-		if ( ! $form ) {
-			echo '<p class="mt-notice">' . esc_html__( 'Call this service to request a car.', 'mytaxi-core' ) . '</p>';
+		if ( ! $form || ! self::can_send() ) {
+			self::offer_direct_contact( $service->ID );
 			return;
 		}
 
 		echo do_shortcode( sprintf( '[contact-form-7 id="%d" html_class="mt-form"]', $form_id ) );
+	}
+
+	/**
+	 * Production sends only to the shared inbox. Test mode is a separate, explicit switch.
+	 *
+	 * @return string
+	 */
+	public static function mail_mode() {
+		return 'test' === (string) get_option( 'mytaxi_mail_mode', 'production' ) ? 'test' : 'production';
+	}
+
+	/**
+	 * Real shared inbox. Empty until the client provides it.
+	 *
+	 * @return string
+	 */
+	public static function production_recipient() {
+		return Fields::email( (string) get_option( 'mytaxi_request_email', '' ) );
+	}
+
+	/**
+	 * Inbox used only while test mode is switched on.
+	 *
+	 * @return string
+	 */
+	public static function test_recipient() {
+		return Fields::email( (string) get_option( 'mytaxi_test_email', '' ) );
+	}
+
+	/**
+	 * Whether this environment may send a request email.
+	 *
+	 * @return bool
+	 */
+	public static function can_send() {
+		if ( 'test' === self::mail_mode() ) {
+			return '' !== self::test_recipient();
+		}
+		return '' !== self::production_recipient();
+	}
+
+	/**
+	 * Recipient for the active mode. Production never falls back to the test address.
+	 *
+	 * @return string
+	 */
+	public static function recipient() {
+		if ( ! self::can_send() ) {
+			return '';
+		}
+		return 'test' === self::mail_mode() ? self::test_recipient() : self::production_recipient();
 	}
 
 	/**
@@ -105,7 +156,7 @@ class ContactForm {
 	}
 
 	/**
-	 * Keep the test inbox as the only recipient and add the visitor as Reply-To.
+	 * Keep the active inbox as the only recipient and add the visitor as Reply-To.
 	 *
 	 * @param array<string,string> $components Mail components.
 	 * @param \WPCF7_ContactForm   $contact_form Form.
@@ -116,7 +167,7 @@ class ContactForm {
 			return $components;
 		}
 
-		$components['recipient'] = self::RECIPIENT;
+		$components['recipient'] = self::recipient();
 		$submission              = class_exists( '\WPCF7_Submission' ) ? \WPCF7_Submission::get_instance() : null;
 		$posted                  = $submission ? $submission->get_posted_data() : array();
 		$email                   = isset( $posted['mytaxi-email'] ) ? sanitize_email( (string) $posted['mytaxi-email'] ) : '';
@@ -169,6 +220,21 @@ class ContactForm {
 				$submission->set_response( __( 'This page cannot send a request.', 'mytaxi-core' ) );
 				$submission->set_status( 'aborted' );
 			}
+			return;
+		}
+		if ( ! self::can_send() ) {
+			$abort = true;
+			if ( $submission ) {
+				$submission->set_response( __( 'This request was not sent. Please use WhatsApp or call this service.', 'mytaxi-core' ) );
+				$submission->set_status( 'aborted' );
+			}
+			return;
+		}
+		$duplicate = self::duplicate_key( $contact_form, $submission );
+		if ( '' !== $duplicate && get_transient( $duplicate ) ) {
+			$abort = true;
+			$submission->set_response( __( 'This request was already sent. Use WhatsApp or call this service if you need to change it.', 'mytaxi-core' ) );
+			$submission->set_status( 'aborted' );
 			return;
 		}
 		if ( ! self::allow_rate() ) {
@@ -315,15 +381,15 @@ class ContactForm {
 		$properties['form']                 = $markup;
 		$properties['additional_settings']  = '';
 		$properties['mail']['active']       = true;
-		$properties['mail']['recipient']    = self::RECIPIENT;
+		$properties['mail']['recipient']    = self::recipient();
 		$properties['mail']['sender']       = sprintf( '%s <%s>', $from_name, $from );
 		$properties['mail']['subject']      = 'Request: [_mytaxi_subject]';
 		$properties['mail']['body']         = $body;
 		$properties['mail']['additional_headers'] = '';
 		$properties['mail']['attachments']  = '';
 		$properties['mail']['use_html']     = false;
-		$properties['messages']['mail_sent_ok']     = __( 'Your request has been sent. The team will contact you to confirm availability.', 'mytaxi-core' );
-		$properties['messages']['mail_sent_ng']     = __( 'We couldn’t send your request. Please try again or call this service.', 'mytaxi-core' );
+		$properties['messages']['mail_sent_ok']     = __( 'Your request has been sent. It is not a confirmed booking. The team will contact you to agree the next step.', 'mytaxi-core' );
+		$properties['messages']['mail_sent_ng']     = __( 'We couldn’t send your request. Please try again, or use WhatsApp or call this service.', 'mytaxi-core' );
 		$properties['messages']['validation_error'] = __( 'The request was not sent. Correct the fields below.', 'mytaxi-core' );
 		$properties['messages']['accept_terms']     = __( 'Please confirm that you have read the Privacy Policy.', 'mytaxi-core' );
 		$properties['messages']['spam']             = __( 'Please refresh the form and try again.', 'mytaxi-core' );
@@ -347,7 +413,8 @@ class ContactForm {
 				'<p class="mt-field"><label> Full name * [text* mytaxi-name autocomplete:name]</label></p>',
 				'<p class="mt-field"><label> Phone * [tel* mytaxi-phone autocomplete:tel placeholder "+359…"]</label></p>',
 				'<p class="mt-field"><label> Email * [email* mytaxi-email autocomplete:email]</label></p>',
-				'<p class="mt-field"><label> Flight number (optional) [text mytaxi-flight maxlength:20 placeholder "e.g. W6…"]</label></p>',
+				'<p class="mt-field"><label> Flight number [text mytaxi-flight maxlength:20 placeholder "e.g. W6…"]</label></p>',
+				'<p class="mt-hint">Optional for a price request. The flight number is needed before an airport pickup can be confirmed.</p>',
 				'<div class="mt-when">',
 				'<p class="mt-field"><label> Pickup date * [date* mytaxi-date]</label></p>',
 				'<p class="mt-field"><label> Pickup time * [text* mytaxi-time autocomplete:off placeholder "HH:MM"]</label></p>',
@@ -358,10 +425,13 @@ class ContactForm {
 				'<p class="mt-field"><label> Passengers * [number* mytaxi-passengers min:1 max:16]</label></p>',
 				'<p class="mt-field"><label> Luggage (optional) [text mytaxi-luggage maxlength:200]</label></p>',
 				'</div>',
+				'<div class="mt-field mt-check">[checkbox mytaxi-child-seat use_label_element "Request a free child seat"]</div>',
+				'<p class="mt-hint">We confirm whether a seat is available. A particular seat is not promised.</p>',
+				'<p class="mt-field"><label> Child’s age, if you request a seat [text mytaxi-child-age maxlength:80]</label></p>',
 				'<p class="mt-field"><label> Additional details (optional) [textarea mytaxi-notes maxlength:2000]</label></p>',
 				'<p class="mt-field mt-accept"><label><span class="mt-accept__control">[acceptance privacy]</span> <span>I have read the <a href="/privacy-policy/">Privacy Policy</a>.</span></label></p>',
 				'<p class="mt-field">[submit class:mt-btn class:mt-btn--yellow "Request a quote"]</p>',
-				'<p class="mt-form__note">Your request is confirmed only after the team contacts you.</p>',
+				'<p class="mt-form__note">Sending this form does not confirm the booking. Confirmation needs an agreed price, one passenger’s name, and the flight number.</p>',
 			)
 		);
 	}
@@ -385,10 +455,13 @@ class ContactForm {
 				'</div>',
 				'<p class="mt-field"><label> Pickup location * [text* mytaxi-origin autocomplete:off]</label></p>',
 				'<p class="mt-field"><label> Destination * [text* mytaxi-destination autocomplete:off]</label></p>',
+				'<div class="mt-field mt-check">[checkbox mytaxi-child-seat use_label_element "Request a free child seat"]</div>',
+				'<p class="mt-hint">We confirm whether a seat is available. A particular seat is not promised.</p>',
+				'<p class="mt-field"><label> Child’s age, if you request a seat [text mytaxi-child-age maxlength:80]</label></p>',
 				'<p class="mt-field"><label> Additional details (optional) [textarea mytaxi-notes maxlength:2000]</label></p>',
 				'<p class="mt-field mt-accept"><label><span class="mt-accept__control">[acceptance privacy]</span> <span>I have read the <a href="/privacy-policy/">Privacy Policy</a>.</span></label></p>',
 				'<p class="mt-field">[submit class:mt-btn class:mt-btn--yellow "Send request"]</p>',
-				'<p class="mt-form__note">Your request is confirmed only after the team contacts you.</p>',
+				'<p class="mt-form__note">Sending this form does not confirm the booking. The team contacts you to agree the journey.</p>',
 			)
 		);
 	}
@@ -418,12 +491,71 @@ class ContactForm {
 			$lines[] = 'Flight number: [mytaxi-flight]';
 			$lines[] = 'Luggage: [mytaxi-luggage]';
 		}
+		$lines[] = 'Child seat requested: [mytaxi-child-seat]';
+		$lines[] = 'Child age: [mytaxi-child-age]';
 		$lines[] = '';
 		$lines[] = 'Notes:';
 		$lines[] = '[mytaxi-notes]';
 		$lines[] = '';
-		$lines[] = 'We’ll confirm availability and your quote before the journey.';
+		$lines[] = 'This message is a request, not a confirmed booking.';
 		return implode( "\n", $lines );
+	}
+
+	/**
+	 * Show this service's own WhatsApp, call, and Viber when mail cannot be sent.
+	 *
+	 * @param int $service_id Service ID.
+	 */
+	private static function offer_direct_contact( $service_id ) {
+		$contacts = Contacts::for_service( (int) $service_id );
+		echo '<p class="mt-form__note">' . esc_html__( 'Send your request by WhatsApp or call this service.', 'mytaxi-core' ) . '</p>';
+		echo '<div class="mt-actions">';
+		if ( ! empty( $contacts['whatsapp_url'] ) ) {
+			echo '<a class="mt-btn mt-btn--yellow" href="' . esc_url( $contacts['whatsapp_url'] ) . '">WhatsApp</a>';
+		}
+		if ( ! empty( $contacts['phone_href'] ) ) {
+			echo '<a class="mt-btn mt-btn--ghost" href="' . esc_url( $contacts['phone_href'] ) . '">' . esc_html__( 'Call', 'mytaxi-core' ) . '</a>';
+		}
+		if ( ! empty( $contacts['viber_url'] ) ) {
+			echo '<a class="mt-btn mt-btn--ghost" href="' . esc_url( $contacts['viber_url'] ) . '">Viber</a>';
+		}
+		echo '</div>';
+	}
+
+	/**
+	 * Remember a successful send so the same request is not mailed again.
+	 *
+	 * @param \WPCF7_ContactForm $contact_form Form.
+	 */
+	public static function remember_sent( $contact_form ) {
+		if ( ! self::is_ours( $contact_form ) || ! class_exists( '\WPCF7_Submission' ) ) {
+			return;
+		}
+		$submission = \WPCF7_Submission::get_instance();
+		$key        = $submission ? self::duplicate_key( $contact_form, $submission ) : '';
+		if ( '' !== $key ) {
+			set_transient( $key, 1, 30 * MINUTE_IN_SECONDS );
+		}
+	}
+
+	/**
+	 * Key for one visitor request.
+	 *
+	 * @param \WPCF7_ContactForm $contact_form Form.
+	 * @param \WPCF7_Submission  $submission Submission.
+	 * @return string
+	 */
+	private static function duplicate_key( $contact_form, $submission ) {
+		$posted = $submission->get_posted_data();
+		$posted = is_array( $posted ) ? $posted : array();
+		$parts  = array( (string) $contact_form->id() );
+		foreach ( array( 'mytaxi-name', 'mytaxi-phone', 'mytaxi-email', 'mytaxi-origin', 'mytaxi-destination', 'mytaxi-date', 'mytaxi-time', 'mytaxi-flight', 'mytaxi-child-age' ) as $name ) {
+			$value = $posted[ $name ] ?? '';
+			$parts[] = is_array( $value ) ? implode( ',', $value ) : (string) $value;
+		}
+		$seat = $posted['mytaxi-child-seat'] ?? '';
+		$parts[] = is_array( $seat ) ? implode( ',', $seat ) : (string) $seat;
+		return 'mytaxi_cf7_once_' . md5( implode( '|', $parts ) );
 	}
 
 	/**

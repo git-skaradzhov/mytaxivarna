@@ -16,6 +16,7 @@ if ( ! class_exists( '\WP_CLI' ) ) {
 \WP_CLI::add_command( 'mytaxi setup', array( Cli::class, 'setup' ) );
 \WP_CLI::add_command( 'mytaxi verify', array( Cli::class, 'verify' ) );
 \WP_CLI::add_command( 'mytaxi mailtest', array( Cli::class, 'mailtest' ) );
+\WP_CLI::add_command( 'mytaxi photos', array( Cli::class, 'photos' ) );
 
 /**
  * Setup and verification commands.
@@ -104,7 +105,20 @@ class Cli {
 		$local_phone  = Contacts::for_service( $albena ? $albena->ID : 0 );
 		$check( 'route phone is the airport phone', '+359888850884' === $route_phone['phone'] );
 		$check( 'route phone is not the local Albena phone', $route_phone['phone'] !== $local_phone['phone'] );
-		$check( 'Sofia has no phone', $sofia && '' === (string) get_post_meta( $sofia->ID, '_mytaxi_phone', true ) );
+		$check( 'Sofia phone is the confirmed number', $sofia && '+359886330192' === (string) get_post_meta( $sofia->ID, '_mytaxi_phone', true ) );
+		$mail_mode = (string) get_option( 'mytaxi_mail_mode', 'production' );
+		$mail_to   = (string) get_option( 'mytaxi_request_email', '' );
+		$mail_test = (string) get_option( 'mytaxi_test_email', '' );
+		update_option( 'mytaxi_mail_mode', 'production', false );
+		update_option( 'mytaxi_request_email', '', false );
+		update_option( 'mytaxi_test_email', 'dispatch-test@example.com', false );
+		$check( 'missing production recipient does not send', ! ContactForm::can_send() && '' === ContactForm::recipient() );
+		update_option( 'mytaxi_mail_mode', 'test', false );
+		$check( 'test mode uses only the test recipient', ContactForm::can_send() && 'dispatch-test@example.com' === ContactForm::recipient() );
+		update_option( 'mytaxi_mail_mode', $mail_mode, false );
+		update_option( 'mytaxi_request_email', $mail_to, false );
+		update_option( 'mytaxi_test_email', $mail_test, false );
+		$check( 'verify restored the mail settings', (string) get_option( 'mytaxi_mail_mode', 'production' ) === $mail_mode && (string) get_option( 'mytaxi_request_email', '' ) === $mail_to );
 		$check( 'no reviews seeded', array() === Data::home_extras()['reviews'] );
 
 		$route_id = $albena_route ? (int) $albena_route->ID : 0;
@@ -262,6 +276,230 @@ class Cli {
 			),
 			$extra
 		);
+	}
+
+	/**
+	 * A complete airport request.
+	 *
+	 * @return array<string,string>
+	 */
+	/**
+	 * Import the prepared client photos without duplicating attachments.
+	 *
+	 * @when after_wp_load
+	 */
+	public static function photos() {
+		require_once ABSPATH . 'wp-admin/includes/file.php';
+		require_once ABSPATH . 'wp-admin/includes/media.php';
+		require_once ABSPATH . 'wp-admin/includes/image.php';
+
+		$dir      = WP_CONTENT_DIR . '/mytaxi-photo-import';
+		$manifest = json_decode( (string) file_get_contents( $dir . '/manifest.json' ), true );
+		if ( ! is_array( $manifest ) ) {
+			\WP_CLI::error( 'Photo manifest is missing.' );
+		}
+
+		$galleries = array();
+		foreach ( $manifest as $item ) {
+			if ( ! is_array( $item ) ) {
+				continue;
+			}
+			$id = self::import_photo( $dir, $item );
+			if ( ! $id ) {
+				continue;
+			}
+			foreach ( (array) ( $item['featured'] ?? array() ) as $target ) {
+				self::assign_featured( (string) $target, $id );
+			}
+			foreach ( (array) ( $item['gallery'] ?? array() ) as $slug => $order ) {
+				$galleries[ (string) $slug ][ (int) $order ] = $id;
+			}
+			\WP_CLI::log( (string) $item['file'] . ' -> ' . $id );
+		}
+
+		foreach ( $galleries as $slug => $ordered ) {
+			ksort( $ordered );
+			self::assign_gallery( $slug, array_values( $ordered ) );
+		}
+		\WP_CLI::success( 'Client photos imported.' );
+	}
+
+	/**
+	 * Create or reuse one attachment.
+	 *
+	 * @param string              $dir Import directory.
+	 * @param array<string,mixed> $item Manifest row.
+	 * @return int
+	 */
+	private static function import_photo( $dir, array $item ) {
+		$hash = (string) ( $item['sha256'] ?? '' );
+		$found = get_posts(
+			array(
+				'post_type'      => 'attachment',
+				'post_status'    => 'inherit',
+				'posts_per_page' => 1,
+				'meta_key'       => '_mytaxi_source',
+				'meta_value'     => $hash,
+				'fields'         => 'ids',
+			)
+		);
+		$id = (int) ( $found[0] ?? 0 );
+		$revision = (string) ( $item['revision'] ?? '' );
+		if ( $id && '' !== $revision && (string) get_post_meta( $id, '_mytaxi_revision', true ) !== $revision ) {
+			self::replace_derivative( $dir, $id, $item );
+		}
+		if ( ! $id ) {
+			$path = $dir . '/' . basename( (string) $item['file'] );
+			$tmp  = wp_tempnam( basename( $path ) );
+			if ( ! $tmp || ! copy( $path, $tmp ) ) {
+				return 0;
+			}
+			$file = array(
+				'name'     => basename( $path ),
+				'tmp_name' => $tmp,
+			);
+			$id = media_handle_sideload( $file, 0, (string) ( $item['caption'] ?? '' ) );
+			if ( is_wp_error( $id ) ) {
+				\WP_CLI::warning( $id->get_error_message() );
+				return 0;
+			}
+			update_post_meta( (int) $id, '_mytaxi_source', $hash );
+			update_post_meta( (int) $id, '_mytaxi_revision', (string) ( $item['revision'] ?? '' ) );
+		}
+
+		$alt  = (string) ( $item['alt'] ?? '' );
+		$seed = (string) get_post_meta( $id, '_mytaxi_alt_seed', true );
+		$now  = (string) get_post_meta( $id, '_wp_attachment_image_alt', true );
+		if ( '' === $now || $now === $seed ) {
+			update_post_meta( $id, '_wp_attachment_image_alt', $alt );
+			update_post_meta( $id, '_mytaxi_alt_seed', $alt );
+		}
+		if ( ! empty( $item['review'] ) ) {
+			update_post_meta( $id, '_mytaxi_review', sanitize_key( (string) $item['review'] ) );
+		}
+		self::copy_webp( $dir, $id, (string) ( $item['webp'] ?? '' ), '_mytaxi_webp', (int) ( $item['width'] ?? 0 ) );
+		self::copy_webp( $dir, $id, (string) ( $item['card_webp'] ?? '' ), '_mytaxi_webp_card', (int) ( $item['card_width'] ?? 0 ) );
+		return (int) $id;
+	}
+
+	/**
+	 * Replace an imported file when the crop revision changes.
+	 *
+	 * @param string              $dir Import directory.
+	 * @param int                 $id Attachment ID.
+	 * @param array<string,mixed> $item Manifest row.
+	 */
+	private static function replace_derivative( $dir, $id, array $item ) {
+		$attached = get_attached_file( $id );
+		$source   = $dir . '/' . basename( (string) ( $item['file'] ?? '' ) );
+		if ( ! $attached || ! is_file( $source ) ) {
+			return;
+		}
+		$meta = wp_get_attachment_metadata( $id );
+		$folder = dirname( $attached );
+		if ( is_array( $meta ) && ! empty( $meta['sizes'] ) ) {
+			foreach ( $meta['sizes'] as $size ) {
+				$file = $folder . '/' . (string) ( $size['file'] ?? '' );
+				if ( is_file( $file ) ) {
+					wp_delete_file( $file );
+				}
+			}
+		}
+		copy( $source, $attached );
+		$generated = wp_generate_attachment_metadata( $id, $attached );
+		if ( is_array( $generated ) ) {
+			wp_update_attachment_metadata( $id, $generated );
+		}
+		update_post_meta( $id, '_mytaxi_revision', (string) ( $item['revision'] ?? '' ) );
+	}
+
+	/**
+	 * Keep a WebP sibling beside the imported JPEG.
+	 *
+	 * @param string $dir Import directory.
+	 * @param int    $id Attachment ID.
+	 * @param string $filename Prepared file name.
+	 * @param string $meta Meta key.
+	 * @param int    $width Pixel width.
+	 */
+	private static function copy_webp( $dir, $id, $filename, $meta, $width ) {
+		if ( '' === $filename ) {
+			return;
+		}
+		$attached = get_attached_file( $id );
+		if ( ! $attached ) {
+			return;
+		}
+		$target = dirname( $attached ) . '/' . basename( $filename );
+		copy( $dir . '/' . basename( $filename ), $target );
+		update_post_meta( $id, $meta, _wp_relative_upload_path( $target ) );
+		update_post_meta( $id, $meta . '_width', $width );
+	}
+
+	/**
+	 * Set a featured image when the current one is empty or itself imported.
+	 *
+	 * @param string $target front, a record slug, or page:slug.
+	 * @param int    $attachment_id Attachment ID.
+	 */
+	private static function assign_featured( $target, $attachment_id ) {
+		$post_id = 0;
+		if ( 'front' === $target ) {
+			$post_id = (int) get_option( 'page_on_front' );
+		} elseif ( str_starts_with( $target, 'page:' ) ) {
+			$page = get_page_by_path( substr( $target, 5 ) );
+			$post_id = $page ? (int) $page->ID : 0;
+		} else {
+			$post = self::find_record( $target );
+			$post_id = $post ? (int) $post->ID : 0;
+		}
+		if ( ! $post_id ) {
+			\WP_CLI::warning( 'Missing target ' . $target );
+			return;
+		}
+		$current = (int) get_post_thumbnail_id( $post_id );
+		if ( $current && ! get_post_meta( $current, '_mytaxi_source', true ) ) {
+			return;
+		}
+		set_post_thumbnail( $post_id, $attachment_id );
+	}
+
+	/**
+	 * Replace a gallery that does not contain hand-picked outside photos.
+	 *
+	 * @param string     $slug Service slug.
+	 * @param array<int> $ids Attachment IDs.
+	 */
+	private static function assign_gallery( $slug, array $ids ) {
+		$post = self::find_record( $slug );
+		if ( ! $post || 'mytaxi_service' !== $post->post_type ) {
+			return;
+		}
+		$current = array_map( 'intval', Fields::decode_list( get_post_meta( $post->ID, '_mytaxi_gallery', true ) ) );
+		foreach ( $current as $id ) {
+			if ( $id && ! get_post_meta( $id, '_mytaxi_source', true ) ) {
+				return;
+			}
+		}
+		update_post_meta( $post->ID, '_mytaxi_gallery', Fields::encode_list( array_map( 'strval', $ids ) ) );
+	}
+
+	/**
+	 * Find a service or route by slug.
+	 *
+	 * @param string $slug Slug.
+	 * @return \WP_Post|null
+	 */
+	private static function find_record( $slug ) {
+		$posts = get_posts(
+			array(
+				'name'           => $slug,
+				'post_type'      => array( 'mytaxi_service', 'mytaxi_route' ),
+				'post_status'    => 'any',
+				'posts_per_page' => 1,
+			)
+		);
+		return $posts[0] ?? null;
 	}
 
 	/**

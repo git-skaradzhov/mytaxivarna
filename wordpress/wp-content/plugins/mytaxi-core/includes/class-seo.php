@@ -228,6 +228,9 @@ class Seo {
 		if ( ! empty( $service['contacts']['phone'] ) ) {
 			$data['telephone'] = $service['contacts']['phone'];
 		}
+		if ( 'Open every day, 24 hours.' === (string) ( $service['hours'] ?? '' ) ) {
+			$data['openingHours'] = 'Mo-Su 00:00-23:59';
+		}
 		return $data;
 	}
 

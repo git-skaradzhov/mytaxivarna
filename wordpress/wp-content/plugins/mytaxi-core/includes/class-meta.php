@@ -75,8 +75,11 @@ class Meta {
 
 		$email = (string) get_post_meta( $id, '_mytaxi_email', true );
 		$phone = (string) get_post_meta( $id, '_mytaxi_phone', true );
-		if ( '' === $email ) {
-			echo '<div class="notice notice-warning inline"><p>Няма имейл на услугата. За теста формата праща до info@skaradzhov.com. Преди пускане сложете получател само за тази услуга.</p></div>';
+		if ( class_exists( '\MyTaxi\Core\ContactForm' ) && \MyTaxi\Core\ContactForm::can_send() ) {
+			$mode = 'test' === \MyTaxi\Core\ContactForm::mail_mode() ? 'тестовия' : 'общия';
+			echo '<div class="notice notice-info inline"><p>Заявките от формата отиват на ' . esc_html( $mode ) . ' адрес ' . esc_html( \MyTaxi\Core\ContactForm::recipient() ) . '. Отделният имейл на услугата не се ползва.</p></div>';
+		} elseif ( class_exists( '\MyTaxi\Core\ContactForm' ) ) {
+			echo '<div class="notice notice-warning inline"><p>Формата на тази услуга не изпраща заявка, защото няма production получател и тестовият режим не е включен.</p></div>';
 		}
 		if ( '' === $phone ) {
 			echo '<div class="notice notice-warning inline"><p>Няма телефон. Публичният бутон за обаждане остава скрит. Не се използва номер от друга услуга.</p></div>';
@@ -99,9 +102,10 @@ class Meta {
 
 		Fields::section( 'Контакти', 'Тези данни се използват на страницата на услугата и на свързаните маршрути. Празно поле скрива съответния бутон.' );
 		Fields::input( 'mytaxi_phone', 'Телефон', $phone, 'Международен формат, например +359…' );
-		Fields::input( 'mytaxi_whatsapp', 'WhatsApp номер', (string) get_post_meta( $id, '_mytaxi_whatsapp', true ), 'Оставете празно, ако няма отделен WhatsApp.' );
-		Fields::input( 'mytaxi_viber', 'Viber номер', (string) get_post_meta( $id, '_mytaxi_viber', true ), 'Оставете празно, ако Viber не се използва.' );
-		Fields::input( 'mytaxi_email', 'Имейл за получаване на заявки', $email, 'Формата изпраща само до този адрес. Адресът не се показва публично.', 'email' );
+		Fields::input( 'mytaxi_whatsapp', 'WhatsApp номер', (string) get_post_meta( $id, '_mytaxi_whatsapp', true ), 'Само номерът на тази услуга. Празно поле скрива бутона.' );
+		Fields::input( 'mytaxi_viber', 'Viber номер', (string) get_post_meta( $id, '_mytaxi_viber', true ), 'Само номерът на тази услуга. Празно поле скрива бутона.' );
+		Fields::input( 'mytaxi_hours', 'Работно време', (string) get_post_meta( $id, '_mytaxi_hours', true ), 'Показва се само ако е записано.' );
+		Fields::input( 'mytaxi_email', 'Имейл за получаване на заявки', $email, 'Не се ползва за изпращане. Формите отиват на общия адрес от Общи настройки.', 'email' );
 		Fields::input( 'mytaxi_gbp_url', 'Google Business URL', (string) get_post_meta( $id, '_mytaxi_gbp_url', true ), 'Поставете само проверен адрес на профила.', 'url' );
 		Fields::end_section();
 
@@ -234,6 +238,7 @@ class Meta {
 		update_post_meta( $post_id, '_mytaxi_phone', Fields::phone( wp_unslash( $_POST['mytaxi_phone'] ?? '' ) ) );
 		update_post_meta( $post_id, '_mytaxi_whatsapp', Fields::phone( wp_unslash( $_POST['mytaxi_whatsapp'] ?? '' ) ) );
 		update_post_meta( $post_id, '_mytaxi_viber', Fields::phone( wp_unslash( $_POST['mytaxi_viber'] ?? '' ) ) );
+		update_post_meta( $post_id, '_mytaxi_hours', sanitize_text_field( wp_unslash( $_POST['mytaxi_hours'] ?? '' ) ) );
 		update_post_meta( $post_id, '_mytaxi_email', Fields::email( wp_unslash( $_POST['mytaxi_email'] ?? '' ) ) );
 		update_post_meta( $post_id, '_mytaxi_gbp_url', Fields::url( wp_unslash( $_POST['mytaxi_gbp_url'] ?? '' ) ) );
 		update_post_meta( $post_id, '_mytaxi_gallery', Fields::encode_list( self::gallery_ids( wp_unslash( $_POST['mytaxi_gallery'] ?? '' ) ) ) );

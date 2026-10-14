@@ -61,7 +61,7 @@ class Setup {
 		self::ensure_page(
 			'privacy-policy',
 			'Privacy policy',
-			'We use the name, phone, email and journey details you submit so the team can reply about that request. The form is not a mailing list. The site owner still needs to confirm the final privacy wording before launch.'
+			'We use the name, phone, email and journey details you submit so the team can reply about that request. The form is not a mailing list.'
 		);
 		self::ensure_page(
 			'terms',
@@ -91,6 +91,7 @@ class Setup {
 		self::ensure_menu( $services );
 		self::refresh_editorial();
 		self::apply_design_copy();
+		self::apply_confirmed_details();
 		self::flush();
 
 		return $services;
@@ -119,7 +120,7 @@ class Setup {
 				'faqs'  => array(
 					array(
 						'question' => 'How do I ask for a taxi in Golden Sands?',
-						'answer'   => 'Call the number on this page, or send the form when it is available. We’ll confirm availability and your quote before your journey.',
+						'answer'   => 'Call the number on this page. The team confirms the trip with you before the journey.',
 					),
 					array(
 						'question' => 'Can I book a pickup from Varna Airport here?',
@@ -203,13 +204,13 @@ class Setup {
 				'slug'  => 'sofia-airport-transfers',
 				'title' => 'Sofia Airport Transfers',
 				'type'  => 'airport_transfer',
-				'phone' => '',
+				'phone' => '+359886330192',
 				'order' => 50,
 				'areas' => array( 'Sofia Airport' ),
 				'cta'   => 'Sofia Airport transfer details',
 				'meta_title' => 'Sofia Airport Transfers',
 				'meta_desc'  => 'Transfers between Sofia Airport and Sofia.',
-				'intro' => 'Separate service. Contacts to be supplied before launch.',
+				'intro' => 'Transfers between Sofia Airport and Sofia.',
 				'body'  => "The route from Sofia Airport to Sofia is listed with this service.\n\nWe’ll confirm availability and your quote before your journey.",
 				'terms' => 'We’ll confirm availability and your quote before your journey.',
 				'faqs'  => array(
@@ -300,8 +301,9 @@ class Setup {
 		update_post_meta( $id, '_mytaxi_cta', $row['cta'] );
 		update_post_meta( $id, '_mytaxi_areas', Fields::encode_list( $row['areas'] ) );
 		update_post_meta( $id, '_mytaxi_phone', $row['phone'] );
-		update_post_meta( $id, '_mytaxi_whatsapp', '' );
-		update_post_meta( $id, '_mytaxi_viber', '' );
+		update_post_meta( $id, '_mytaxi_whatsapp', Fields::phone( (string) ( $row['whatsapp'] ?? $row['phone'] ) ) );
+		update_post_meta( $id, '_mytaxi_viber', Fields::phone( (string) ( $row['viber'] ?? $row['phone'] ) ) );
+		update_post_meta( $id, '_mytaxi_hours', 'Open every day, 24 hours.' );
 		update_post_meta( $id, '_mytaxi_email', '' );
 		update_post_meta( $id, '_mytaxi_gbp_url', '' );
 		update_post_meta( $id, '_mytaxi_gallery', '[]' );
@@ -397,6 +399,176 @@ class Setup {
 	}
 
 	/**
+	 * Write the contacts and booking terms the client confirmed.
+	 */
+	private static function apply_confirmed_details() {
+		$stored_inbox = Fields::email( (string) get_option( 'mytaxi_request_email', '' ) );
+		if ( 'info@skaradzhov.com' === $stored_inbox ) {
+			if ( '' === Fields::email( (string) get_option( 'mytaxi_test_email', '' ) ) ) {
+				update_option( 'mytaxi_test_email', $stored_inbox, false );
+			}
+			update_option( 'mytaxi_request_email', '', false );
+		}
+		if ( ! in_array( (string) get_option( 'mytaxi_mail_mode', '' ), array( 'test', 'production' ), true ) ) {
+			update_option( 'mytaxi_mail_mode', 'production', false );
+		}
+
+		$phones = array(
+			'taxi-golden-sands'       => '+359884811045',
+			'taxi-albena'             => '+359896817384',
+			'taxi-kranevo'            => '+359896816334',
+			'varna-airport-transfers' => '+359888850884',
+			'sofia-airport-transfers' => '+359886330192',
+		);
+		$local_terms = 'Open every day, 24 hours. A child seat is free when you ask for it before the journey.';
+		$hours_only  = 'Open every day, 24 hours.';
+		$transfer_terms = 'The fare is a fixed price for the car, not for each person. It covers a one-way transfer, and the return is the same price for that route. A delayed flight does not add a waiting charge. Please book at least one day before the flight. The request is confirmed after the price is agreed and you give one passenger’s name and the flight number. The driver meets you in the arrivals hall with a name sign. You do not pay in advance. You pay the driver in cash or by card when the transfer is done. You can cancel at any time with no charge. A child seat is free when you ask for it with the booking. We confirm whether a seat is available and do not promise a particular seat. The service is available every day, 24 hours.';
+		$previous_transfer_terms = 'The fare is a fixed price for the car, not for each person. It covers a one-way transfer, and the return is the same price for that route. A delayed flight does not add a waiting charge. Please book at least one day before the flight. The request is confirmed after the price is agreed and you give one passenger’s name and the flight number. The driver meets you in the arrivals hall with a name sign. You do not pay in advance. You pay the driver in cash or by card when the transfer is done. You can cancel at any time with no charge. A child seat is free when you ask for it with the booking. The service is available every day, 24 hours.';
+		$local_benefits = array(
+			'Open every day, 24 hours',
+			'Free child seat when requested in advance',
+		);
+		$transfer_benefits = array(
+			'Fixed price for the car, not per person',
+			'One-way fare; the return is the same price',
+			'No extra charge for a delayed flight',
+			'Book at least one day before the flight',
+			'Confirmed after the price, one passenger name, and the flight number',
+			'The driver meets you in arrivals with a name sign',
+			'Pay the driver in cash or by card, with no prepayment',
+			'Cancel at any time with no charge',
+			'Free child seat when requested with the booking',
+			'Open every day, 24 hours',
+		);
+		$old_terms = 'We’ll confirm availability and your quote before your journey.';
+
+		foreach ( $phones as $slug => $phone ) {
+			$post = self::find( 'mytaxi_service', $slug );
+			if ( ! $post ) {
+				continue;
+			}
+			$phone = Fields::phone( $phone );
+			update_post_meta( $post->ID, '_mytaxi_phone', $phone );
+			if ( '' === (string) get_post_meta( $post->ID, '_mytaxi_whatsapp', true ) ) {
+				update_post_meta( $post->ID, '_mytaxi_whatsapp', $phone );
+			}
+			if ( '' === (string) get_post_meta( $post->ID, '_mytaxi_viber', true ) ) {
+				update_post_meta( $post->ID, '_mytaxi_viber', $phone );
+			}
+			if ( '' === (string) get_post_meta( $post->ID, '_mytaxi_hours', true ) ) {
+				update_post_meta( $post->ID, '_mytaxi_hours', 'Open every day, 24 hours.' );
+			}
+			$airport = 'airport_transfer' === (string) get_post_meta( $post->ID, '_mytaxi_type', true );
+			$terms   = (string) get_post_meta( $post->ID, '_mytaxi_terms', true );
+			if ( $airport && ( '' === $terms || $old_terms === $terms || $previous_transfer_terms === $terms ) ) {
+				update_post_meta( $post->ID, '_mytaxi_terms', $transfer_terms );
+			} elseif ( ! $airport && ( '' === $terms || $old_terms === $terms || $local_terms === $terms ) ) {
+				update_post_meta( $post->ID, '_mytaxi_terms', $hours_only );
+			}
+			$benefits = array_values( array_filter( array_map( 'strval', Fields::decode_list( get_post_meta( $post->ID, '_mytaxi_benefits', true ) ) ) ) );
+			if ( $airport && ( ! $benefits || $benefits === $transfer_benefits ) ) {
+				$next = $transfer_benefits;
+				$next[8] = 'Free child seat when requested with the booking; availability is confirmed with you';
+				update_post_meta( $post->ID, '_mytaxi_benefits', Fields::encode_list( $next ) );
+			} elseif ( ! $airport && ( ! $benefits || $benefits === $local_benefits ) ) {
+				update_post_meta( $post->ID, '_mytaxi_benefits', '[]' );
+			}
+			if ( str_contains( $terms, 'recipient email is saved' ) ) {
+				update_post_meta( $post->ID, '_mytaxi_terms', $transfer_terms );
+			}
+			self::replace_faq_answers(
+				$post->ID,
+				array(
+					'Call the number on this page, or send the form when it is available. We’ll confirm availability and your quote before your journey.' => 'Call the number on this page. The team confirms the trip with you before the journey.',
+				)
+			);
+			if ( $airport ) {
+				self::replace_faq_answers(
+					$post->ID,
+					array(
+						'Call the number on this page or send the form with your date, time, and flight number. We’ll confirm availability and your quote before your journey.' => 'Call or send the form with your date and time. You can ask for a price without a flight number. The transfer is confirmed after the price is agreed and you give one passenger’s name and the flight number. Please book at least one day before the flight. The driver meets you in the arrivals hall with a name sign.',
+						'Use the contact options on this page. We’ll confirm availability and your quote before your journey.' => 'Use the contact options on this page. You can ask for a price without a flight number. The transfer is confirmed after the price is agreed and you give one passenger’s name and the flight number. The flight number is needed before the driver meets you.',
+					)
+				);
+			}
+		}
+
+		$routes = get_posts(
+			array(
+				'post_type'      => 'mytaxi_route',
+				'post_status'    => 'publish',
+				'posts_per_page' => 50,
+				'no_found_rows'  => true,
+			)
+		);
+		foreach ( $routes as $route ) {
+			self::replace_faq_answers(
+				$route->ID,
+				array(
+					'Use the form on this page. The pickup and destination are already filled in. We’ll confirm availability and your quote before your journey.' => 'Use the form on this page. The pickup and destination are already filled in. Sending it asks for a quote and does not confirm the transfer. Confirmation needs an agreed price, one passenger’s name, and the flight number. The flight number can follow a price enquiry, and it is needed before the airport pickup.',
+					'If a fare is published, it is shown with the route. Otherwise the price is confirmed with you before the journey.' => 'The fare is agreed as a fixed price for the car, for a one-way transfer. The return on the same route is the same price. There is no extra charge for waiting on a delayed flight, and you can cancel at any time with no charge. You pay the driver in cash or by card. No payment is taken in advance.',
+				)
+			);
+		}
+
+		$terms_page = get_page_by_path( 'terms' );
+		$old_page   = 'Sending a request does not confirm the journey. The team contacts you to confirm availability and the quote before the trip.';
+		$terms_html = '<p>These conditions apply to airport transfers.</p><p>' . $transfer_terms . '</p><p>Sending a request does not confirm the journey. The team agrees the price with you first.</p>';
+		if ( $terms_page && ( $old_page === trim( wp_strip_all_tags( $terms_page->post_content ) ) || str_contains( (string) $terms_page->post_content, $previous_transfer_terms ) ) ) {
+			wp_update_post(
+				array(
+					'ID'           => $terms_page->ID,
+					'post_content' => $terms_html,
+				)
+			);
+		}
+
+		$privacy_note = ' The site owner still needs to confirm the final privacy wording before launch.';
+		$privacy_pages = get_posts(
+			array(
+				'post_type'      => 'page',
+				'post_status'    => 'any',
+				'posts_per_page' => 20,
+				'no_found_rows'  => true,
+			)
+		);
+		foreach ( $privacy_pages as $privacy ) {
+			if ( ! str_contains( (string) $privacy->post_content, $privacy_note ) ) {
+				continue;
+			}
+			wp_update_post(
+				array(
+					'ID'           => $privacy->ID,
+					'post_content' => str_replace( $privacy_note, '', (string) $privacy->post_content ),
+				)
+			);
+		}
+	}
+
+	/**
+	 * Replace a FAQ answer only while it is still the seeded sentence.
+	 *
+	 * @param int               $post_id Post ID.
+	 * @param array<string,string> $map Old answer to new answer.
+	 */
+	private static function replace_faq_answers( $post_id, array $map ) {
+		$faqs    = Fields::decode_list( get_post_meta( $post_id, '_mytaxi_faq', true ) );
+		$changed = false;
+		foreach ( $faqs as $index => $row ) {
+			if ( ! is_array( $row ) ) {
+				continue;
+			}
+			$answer = (string) ( $row['answer'] ?? '' );
+			if ( isset( $map[ $answer ] ) ) {
+				$faqs[ $index ]['answer'] = $map[ $answer ];
+				$changed = true;
+			}
+		}
+		if ( $changed ) {
+			update_post_meta( $post_id, '_mytaxi_faq', Fields::encode_list( $faqs ) );
+		}
+	}
+
 	/**
 	 * Align seeded copy with the design handoff when it is still the previous sample.
 	 */
@@ -415,7 +587,7 @@ class Setup {
 				'Transfers to and from Varna Airport, including Golden Sands, Albena, Kranevo, and Balchik.' => 'Transfers between Varna Airport and coastal destinations.',
 			),
 			'sofia-airport-transfers' => array(
-				'Transfers between Sofia Airport and Sofia.' => 'Separate service. Contacts to be supplied before launch.',
+				'Separate service. Contacts to be supplied before launch.' => 'Transfers between Sofia Airport and Sofia.',
 			),
 		);
 		foreach ( $intros as $slug => $map ) {
@@ -486,7 +658,7 @@ class Setup {
 				array(
 					'ID'           => $privacy->ID,
 					'post_title'   => 'Privacy policy',
-					'post_content' => '<p>We use the name, phone, email and journey details you submit so the team can reply about that request. The form is not a mailing list. The site owner still needs to confirm the final privacy wording before launch.</p>',
+					'post_content' => '<p>We use the name, phone, email and journey details you submit so the team can reply about that request. The form is not a mailing list.</p>',
 				)
 			);
 		}

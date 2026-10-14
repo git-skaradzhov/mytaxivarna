@@ -1251,9 +1251,11 @@ body.mytaxi .site-footer {
   }
 
   .mt-mobile-bar .mt-btn {
-    flex: 1;
+    flex: 1 1 6.5rem;
     height: 48px;
     min-height: 48px;
+    min-width: 0;
+    padding-inline: 8px;
   }
 
   body.mytaxi-input-focus {
@@ -1609,7 +1611,8 @@ form.wpcf7-form.mt-form .mt-accept input {
   margin: 0;
 }
 
-.mt-form__note {
+.mt-form__note,
+.mt-hint {
   margin: 0;
   color: var(--mt-muted);
   font-size: 13px;
@@ -1705,15 +1708,29 @@ form.wpcf7-form.mt-form .mt-accept input {
   }
 
   .mt-hero__media--home {
+    position: relative;
+    width: calc(100% + (100vw - min(1200px, 100vw - 64px)) / 2);
+    max-width: none;
+    justify-self: start;
     aspect-ratio: 3 / 2;
-    border-radius: 16px;
-    -webkit-mask-image: none;
-    mask-image: none;
+    border-radius: 0;
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 162 100'%3E%3Cpath fill='%23fff' d='M14 0H162V100H36Q22 100 16 88L0 16Q0 4 14 0Z'/%3E%3C/svg%3E");
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 162 100'%3E%3Cpath fill='%23fff' d='M14 0H162V100H36Q22 100 16 88L0 16Q0 4 14 0Z'/%3E%3C/svg%3E");
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-size: 100% 100%;
+    mask-size: 100% 100%;
   }
 
+  .mt-hero__media--home picture,
   .mt-hero__media--home img {
-    position: static;
-    aspect-ratio: 3 / 2;
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    aspect-ratio: auto;
+    object-fit: cover;
+    object-position: center 58%;
   }
 
   .mt-places--local {
@@ -1730,6 +1747,10 @@ form.wpcf7-form.mt-form .mt-accept input {
 
   .mt-places--airport .mt-place__media {
     aspect-ratio: 588 / 280;
+  }
+
+  .mt-places--airport .mt-place__media img {
+    object-position: center 82%;
   }
 
   .mt-split {
@@ -1765,4 +1786,12 @@ form.wpcf7-form.mt-form .mt-accept input {
     align-items: center;
     min-height: 176px;
   }
+}
+
+.mt-hero--compact {
+  display: block;
+}
+
+.mt-hero--compact .mt-hero__copy {
+  max-width: 42rem;
 }

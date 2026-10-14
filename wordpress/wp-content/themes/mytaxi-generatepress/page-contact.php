@@ -12,8 +12,16 @@ while ( have_posts() ) :
 	the_post();
 	$groups = mytaxi_service_groups();
 	mytaxi_breadcrumbs();
-	mytaxi_page_hero( __( 'Contact', 'mytaxi-generatepress' ), 'taxi-albena' );
 	?>
+	<header class="mt-hero mt-hero--compact">
+		<div class="mt-hero__copy">
+			<p class="mt-kicker"><?php esc_html_e( 'Contact', 'mytaxi-generatepress' ); ?></p>
+			<h1><?php the_title(); ?></h1>
+			<?php if ( get_the_content() ) : ?>
+				<div class="mt-prose"><?php the_content(); ?></div>
+			<?php endif; ?>
+		</div>
+	</header>
 	<section class="mt-section" id="details">
 		<div class="mt-section__head">
 			<h2><?php echo esc_html( mytaxi_line( 'contact_local_heading' ) ); ?></h2>
