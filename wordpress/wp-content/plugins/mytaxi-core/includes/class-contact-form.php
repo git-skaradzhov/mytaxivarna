@@ -14,7 +14,7 @@ defined( 'ABSPATH' ) || exit;
  */
 class ContactForm {
 
-	const REVISION = '4';
+	const REVISION = '7';
 
 	/**
 	 * Context of the submission currently being mailed.
@@ -22,6 +22,13 @@ class ContactForm {
 	 * @var array<string,string>
 	 */
 	private static $context = array();
+
+	/**
+	 * Route and area values written into fields after Contact Form 7 builds them.
+	 *
+	 * @var array<string,string>
+	 */
+	private static $fills = array();
 
 	/**
 	 * Hook Contact Form 7 when that plugin is available.
@@ -34,6 +41,7 @@ class ContactForm {
 		add_action( 'wpcf7_mail_sent', array( __CLASS__, 'remember_sent' ) );
 		add_filter( 'wpcf7_skip_mail', array( __CLASS__, 'skip_honeypot' ), 10, 2 );
 		add_filter( 'wpcf7_form_tag', array( __CLASS__, 'prefill' ), 10, 2 );
+		add_filter( 'wpcf7_form_elements', array( __CLASS__, 'apply_prefill' ) );
 		add_filter( 'wpcf7_validate_tel', array( __CLASS__, 'validate_phone' ), 20, 2 );
 		add_filter( 'wpcf7_validate_tel*', array( __CLASS__, 'validate_phone' ), 20, 2 );
 		add_filter( 'wpcf7_validate_text', array( __CLASS__, 'validate_time' ), 20, 2 );
@@ -270,24 +278,58 @@ class ContactForm {
 	 * @return mixed
 	 */
 	public static function prefill( $tag, $replace = true ) {
-		if ( ! $replace || ! is_singular( 'mytaxi_route' ) ) {
+		if ( ! $replace ) {
 			return $tag;
 		}
-		$name = is_object( $tag ) ? (string) $tag->name : (string) ( $tag['name'] ?? '' );
-		if ( ! in_array( $name, array( 'mytaxi-origin', 'mytaxi-destination' ), true ) ) {
-			return $tag;
+		$name  = is_object( $tag ) ? (string) $tag->name : (string) ( $tag['name'] ?? '' );
+		$value = '';
+		if ( is_singular( 'mytaxi_route' ) && in_array( $name, array( 'mytaxi-origin', 'mytaxi-destination' ), true ) ) {
+			$route = Data::route( get_queried_object_id() );
+			$value = 'mytaxi-origin' === $name ? (string) ( $route['origin'] ?? '' ) : (string) ( $route['destination'] ?? '' );
+		} elseif ( is_singular( 'mytaxi_service' ) && 'mytaxi-origin' === $name ) {
+			$service = Data::service( get_queried_object_id() );
+			if ( 'local_taxi' === ( $service['type'] ?? '' ) && ! empty( $service['areas'][0] ) ) {
+				$value = (string) $service['areas'][0];
+			}
 		}
-		$route = Data::route( get_queried_object_id() );
-		$value = 'mytaxi-origin' === $name ? (string) ( $route['origin'] ?? '' ) : (string) ( $route['destination'] ?? '' );
-		if ( '' === $value ) {
-			return $tag;
+		if ( '' !== $value ) {
+			self::$fills[ $name ] = $value;
 		}
-		if ( is_object( $tag ) ) {
-			$tag->values = array( $value );
-			return $tag;
-		}
-		$tag['values'] = array( $value );
 		return $tag;
+	}
+
+	/**
+	 * Put the known pickup and destination into the fields, leaving the placeholders in place.
+	 *
+	 * @param string $html Form HTML.
+	 * @return string
+	 */
+	public static function apply_prefill( $html ) {
+		foreach ( self::$fills as $name => $value ) {
+			$safe    = esc_attr( $value );
+			$pattern = '/<input\b[^>]*\bname="' . preg_quote( $name, '/' ) . '"[^>]*>/';
+			$html    = preg_replace_callback(
+				$pattern,
+				static function ( $matches ) use ( $safe ) {
+					$tag = $matches[0];
+					if ( preg_match( '/\bvalue="/', $tag ) ) {
+						return preg_replace_callback(
+							'/\bvalue="[^"]*"/',
+							static function () use ( $safe ) {
+								return 'value="' . $safe . '"';
+							},
+							$tag,
+							1
+						);
+					}
+					return substr( $tag, 0, -1 ) . ' value="' . $safe . '">';
+				},
+				$html,
+				1
+			);
+		}
+		self::$fills = array();
+		return $html;
 	}
 
 	/**
@@ -323,7 +365,7 @@ class ContactForm {
 			return $result;
 		}
 		$value = isset( $_POST['mytaxi-time'] ) ? sanitize_text_field( wp_unslash( $_POST['mytaxi-time'] ) ) : '';
-		if ( '' !== $value && ! preg_match( '/^(?:[01]\d|2[0-3]):[0-5]\d$/', $value ) ) {
+		if ( '' !== $value && ! preg_match( '/^(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$/', $value ) ) {
 			$result->invalidate( $tag, __( 'Enter the time as HH:MM.', 'mytaxi-core' ) );
 		}
 		return $result;
@@ -410,28 +452,29 @@ class ContactForm {
 			"\n",
 			array(
 				'<p class="mt-hp" aria-hidden="true"><label> Company [text mytaxi-company autocomplete:off]</label></p>',
-				'<p class="mt-field"><label> Full name * [text* mytaxi-name autocomplete:name]</label></p>',
-				'<p class="mt-field"><label> Phone * [tel* mytaxi-phone autocomplete:tel placeholder "+359…"]</label></p>',
-				'<p class="mt-field"><label> Email * [email* mytaxi-email autocomplete:email]</label></p>',
-				'<p class="mt-field"><label> Flight number [text mytaxi-flight maxlength:20 placeholder "e.g. W6…"]</label></p>',
-				'<p class="mt-hint">Optional for a price request. The flight number is needed before an airport pickup can be confirmed.</p>',
-				'<div class="mt-when">',
-				'<p class="mt-field"><label> Pickup date * [date* mytaxi-date]</label></p>',
-				'<p class="mt-field"><label> Pickup time * [text* mytaxi-time autocomplete:off placeholder "HH:MM"]</label></p>',
-				'</div>',
-				'<p class="mt-field"><label> Pickup location * [text* mytaxi-origin autocomplete:off]</label></p>',
-				'<p class="mt-field"><label> Destination * [text* mytaxi-destination autocomplete:off]</label></p>',
 				'<div class="mt-pair">',
-				'<p class="mt-field"><label> Passengers * [number* mytaxi-passengers min:1 max:16]</label></p>',
-				'<p class="mt-field"><label> Luggage (optional) [text mytaxi-luggage maxlength:200]</label></p>',
+				'<p class="mt-field"><label><span class="mt-sr">Full name</span> [text* mytaxi-name autocomplete:name placeholder "Full name"]</label></p>',
+				'<p class="mt-field"><label><span class="mt-sr">Phone</span> [tel* mytaxi-phone autocomplete:tel placeholder "Phone"]</label></p>',
 				'</div>',
-				'<div class="mt-field mt-check">[checkbox mytaxi-child-seat use_label_element "Request a free child seat"]</div>',
-				'<p class="mt-hint">We confirm whether a seat is available. A particular seat is not promised.</p>',
-				'<p class="mt-field"><label> Child’s age, if you request a seat [text mytaxi-child-age maxlength:80]</label></p>',
-				'<p class="mt-field"><label> Additional details (optional) [textarea mytaxi-notes maxlength:2000]</label></p>',
+				'<div class="mt-when">',
+				'<p class="mt-field"><label><span class="mt-sr">Date</span> [date* mytaxi-date class:mt-picker min:yesterday max:+18_months autocomplete:off placeholder "Date"]</label></p>',
+				'<p class="mt-field"><label><span class="mt-sr">Time</span> [text* mytaxi-time class:mt-picker class:mt-picker--time autocomplete:off placeholder "Time"]</label></p>',
+				'</div>',
+				'<div class="mt-pair">',
+				'<p class="mt-field"><label><span class="mt-sr">Pickup</span> [text* mytaxi-origin autocomplete:off placeholder "Pickup"]</label></p>',
+				'<p class="mt-field"><label><span class="mt-sr">Destination</span> [text* mytaxi-destination autocomplete:off placeholder "Destination"]</label></p>',
+				'</div>',
+				'<div class="mt-pair">',
+				'<p class="mt-field"><label><span class="mt-sr">Flight number</span> [text mytaxi-flight maxlength:20 placeholder "Flight number, optional"]</label></p>',
+				'<p class="mt-field mt-field--count"><label><span class="mt-sr">Passengers</span><span class="mt-suffix" aria-hidden="true">Passengers</span> [number* mytaxi-passengers min:1 max:16 "1"]</label></p>',
+				'</div>',
+				'<p class="mt-field"><label><span class="mt-sr">Email</span> [email mytaxi-email autocomplete:email placeholder "Email, optional"]</label></p>',
+				'<div class="mt-field mt-check">[checkbox mytaxi-child-seat use_label_element "Free child seat"]</div>',
+				'<p class="mt-field mt-child-age" hidden><label><span class="mt-sr">Child age</span> [text mytaxi-child-age maxlength:80 placeholder "Child’s age"]</label></p>',
+				'<p class="mt-field"><label><span class="mt-sr">Notes</span> [textarea mytaxi-notes rows:2 maxlength:2000 placeholder "Luggage or anything else"]</label></p>',
 				'<p class="mt-field mt-accept"><label><span class="mt-accept__control">[acceptance privacy]</span> <span>I have read the <a href="/privacy-policy/">Privacy Policy</a>.</span></label></p>',
 				'<p class="mt-field">[submit class:mt-btn class:mt-btn--yellow "Request a quote"]</p>',
-				'<p class="mt-form__note">Sending this form does not confirm the booking. Confirmation needs an agreed price, one passenger’s name, and the flight number.</p>',
+				'<p class="mt-form__note">This sends a request. The price, a passenger name, and the flight number are agreed before the pickup.</p>',
 			)
 		);
 	}
@@ -446,22 +489,25 @@ class ContactForm {
 			"\n",
 			array(
 				'<p class="mt-hp" aria-hidden="true"><label> Company [text mytaxi-company autocomplete:off]</label></p>',
-				'<p class="mt-field"><label> Full name * [text* mytaxi-name autocomplete:name]</label></p>',
-				'<p class="mt-field"><label> Phone * [tel* mytaxi-phone autocomplete:tel placeholder "+359…"]</label></p>',
-				'<p class="mt-field"><label> Email (optional) [email mytaxi-email autocomplete:email]</label></p>',
-				'<div class="mt-when">',
-				'<p class="mt-field"><label> Pickup date * [date* mytaxi-date]</label></p>',
-				'<p class="mt-field"><label> Pickup time * [text* mytaxi-time autocomplete:off placeholder "HH:MM"]</label></p>',
+				'<div class="mt-pair">',
+				'<p class="mt-field"><label><span class="mt-sr">Full name</span> [text* mytaxi-name autocomplete:name placeholder "Full name"]</label></p>',
+				'<p class="mt-field"><label><span class="mt-sr">Phone</span> [tel* mytaxi-phone autocomplete:tel placeholder "Phone"]</label></p>',
 				'</div>',
-				'<p class="mt-field"><label> Pickup location * [text* mytaxi-origin autocomplete:off]</label></p>',
-				'<p class="mt-field"><label> Destination * [text* mytaxi-destination autocomplete:off]</label></p>',
-				'<div class="mt-field mt-check">[checkbox mytaxi-child-seat use_label_element "Request a free child seat"]</div>',
-				'<p class="mt-hint">We confirm whether a seat is available. A particular seat is not promised.</p>',
-				'<p class="mt-field"><label> Child’s age, if you request a seat [text mytaxi-child-age maxlength:80]</label></p>',
-				'<p class="mt-field"><label> Additional details (optional) [textarea mytaxi-notes maxlength:2000]</label></p>',
+				'<div class="mt-when">',
+				'<p class="mt-field"><label><span class="mt-sr">Date</span> [date* mytaxi-date class:mt-picker min:yesterday max:+18_months autocomplete:off placeholder "Date"]</label></p>',
+				'<p class="mt-field"><label><span class="mt-sr">Time</span> [text* mytaxi-time class:mt-picker class:mt-picker--time autocomplete:off placeholder "Time"]</label></p>',
+				'</div>',
+				'<div class="mt-pair">',
+				'<p class="mt-field"><label><span class="mt-sr">Pickup</span> [text* mytaxi-origin autocomplete:off placeholder "Pickup"]</label></p>',
+				'<p class="mt-field"><label><span class="mt-sr">Destination</span> [text* mytaxi-destination autocomplete:off placeholder "Destination"]</label></p>',
+				'</div>',
+				'<p class="mt-field"><label><span class="mt-sr">Email</span> [email mytaxi-email autocomplete:email placeholder "Email, optional"]</label></p>',
+				'<div class="mt-field mt-check">[checkbox mytaxi-child-seat use_label_element "Free child seat"]</div>',
+				'<p class="mt-field mt-child-age" hidden><label><span class="mt-sr">Child age</span> [text mytaxi-child-age maxlength:80 placeholder "Child’s age"]</label></p>',
+				'<p class="mt-field"><label><span class="mt-sr">Notes</span> [textarea mytaxi-notes rows:2 maxlength:2000 placeholder "Luggage or anything else"]</label></p>',
 				'<p class="mt-field mt-accept"><label><span class="mt-accept__control">[acceptance privacy]</span> <span>I have read the <a href="/privacy-policy/">Privacy Policy</a>.</span></label></p>',
 				'<p class="mt-field">[submit class:mt-btn class:mt-btn--yellow "Send request"]</p>',
-				'<p class="mt-form__note">Sending this form does not confirm the booking. The team contacts you to agree the journey.</p>',
+				'<p class="mt-form__note">This sends a request. The team confirms the car with you.</p>',
 			)
 		);
 	}
@@ -489,7 +535,6 @@ class ContactForm {
 		if ( $airport ) {
 			$lines[] = 'Passengers: [mytaxi-passengers]';
 			$lines[] = 'Flight number: [mytaxi-flight]';
-			$lines[] = 'Luggage: [mytaxi-luggage]';
 		}
 		$lines[] = 'Child seat requested: [mytaxi-child-seat]';
 		$lines[] = 'Child age: [mytaxi-child-age]';

@@ -1534,7 +1534,7 @@ body.mytaxi :focus-visible {
 form.wpcf7-form.mt-form {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 20px;
+  gap: 12px;
 }
 
 form.wpcf7-form.mt-form .mt-field,
@@ -1545,12 +1545,15 @@ form.wpcf7-form.mt-form .mt-accept {
 }
 
 form.wpcf7-form.mt-form .mt-field label {
-  display: grid;
-  gap: 8px;
+  display: block;
   color: var(--mt-navy);
-  font-size: 14px;
-  font-weight: 700;
-  line-height: 20px;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 24px;
+}
+
+form.wpcf7-form.mt-form .wpcf7-form-control-wrap {
+  display: block;
 }
 
 form.wpcf7-form.mt-form input:not([type="checkbox"]):not([type="submit"]),
@@ -1558,20 +1561,34 @@ form.wpcf7-form.mt-form textarea,
 form.wpcf7-form.mt-form select {
   box-sizing: border-box;
   width: 100%;
-  min-height: 52px;
-  padding: 0 16px;
-  border: 1px solid #dce2e3;
-  border-radius: 8px;
+  min-height: 48px;
+  padding: 0 14px;
+  border: 1px solid #e3e6e4;
+  border-radius: 12px;
   background: #fff;
   color: var(--mt-navy);
   font: inherit;
   font-size: 16px;
-  line-height: 26px;
+  line-height: 24px;
+  box-shadow: none;
+}
+
+form.wpcf7-form.mt-form input::placeholder,
+form.wpcf7-form.mt-form textarea::placeholder {
+  color: #8b938f;
+  opacity: 1;
+}
+
+form.wpcf7-form.mt-form input:focus,
+form.wpcf7-form.mt-form textarea:focus {
+  outline: none;
+  border-color: var(--mt-navy);
+  box-shadow: 0 0 0 3px rgba(20, 43, 59, 0.12);
 }
 
 form.wpcf7-form.mt-form textarea {
-  min-height: 120px;
-  padding: 16px;
+  min-height: 72px;
+  padding: 12px 14px;
   resize: vertical;
 }
 
@@ -1617,6 +1634,86 @@ form.wpcf7-form.mt-form .mt-accept input {
   color: var(--mt-muted);
   font-size: 13px;
   line-height: 20px;
+}
+
+.mt-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+form.wpcf7-form.mt-form .mt-when,
+form.wpcf7-form.mt-form .mt-pair {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+}
+
+form.wpcf7-form.mt-form .mt-check .wpcf7-list-item {
+  margin: 0;
+}
+
+form.wpcf7-form.mt-form .mt-check label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 0 14px;
+  border: 1px solid #e3e6e4;
+  border-radius: 12px;
+  background: #fff;
+  font-weight: 500;
+}
+
+form.wpcf7-form.mt-form .mt-check input {
+  width: 18px;
+  height: 18px;
+  min-height: 18px;
+  margin: 0;
+  accent-color: var(--mt-navy);
+}
+
+form.wpcf7-form.mt-form .mt-child-age[hidden],
+form.wpcf7-form.mt-form .mt-child-age:not(.is-open) {
+  display: none;
+}
+
+form.wpcf7-form.mt-form .mt-field--count label {
+  position: relative;
+}
+
+form.wpcf7-form.mt-form .mt-suffix {
+  position: absolute;
+  left: 14px;
+  top: 12px;
+  z-index: 1;
+  color: #8b938f;
+  font-size: 16px;
+  line-height: 24px;
+  pointer-events: none;
+}
+
+form.wpcf7-form.mt-form .mt-field--count input {
+  padding-left: 124px;
+  text-align: right;
+}
+
+form.wpcf7-form.mt-form input[type="date"],
+form.wpcf7-form.mt-form input[type="time"] {
+  color-scheme: light;
+}
+
+@media (max-width: 640px) {
+  form.wpcf7-form.mt-form .mt-when,
+  form.wpcf7-form.mt-form .mt-pair {
+    grid-template-columns: 1fr;
+  }
 }
 
 .mt-legal {

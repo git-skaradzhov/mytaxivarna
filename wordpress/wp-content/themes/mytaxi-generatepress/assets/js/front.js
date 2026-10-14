@@ -51,6 +51,8 @@
   }
 
   document.querySelectorAll('.mt-form').forEach(function (form) {
+    preparePickers(form);
+    prepareChildSeat(form);
     var tokenUrl = form.getAttribute('data-token-url');
     var tokenInput = form.querySelector('[name="mytaxi_token"]');
     var startedInput = form.querySelector('[name="mytaxi_started"]');
@@ -95,6 +97,8 @@
     if (button) {
       button.disabled = false;
     }
+    preparePickers(form);
+    prepareChildSeat(form);
   });
 
   document.addEventListener('wpcf7invalid', function (event) {
@@ -171,4 +175,113 @@
       button.disabled = true;
     }
   });
+
+  function preparePickers(form) {
+    var yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    var later = new Date();
+    later.setMonth(later.getMonth() + 18);
+    form.querySelectorAll('input.mt-picker').forEach(function (input) {
+      if (input.dataset.ready === '1') {
+        return;
+      }
+      input.dataset.ready = '1';
+      var kind = input.classList.contains('mt-picker--time') ? 'time' : 'date';
+      var label = kind === 'date' ? 'Date' : 'Time';
+      var switching = false;
+      var limit = function () {
+        if (kind === 'date') {
+          input.min = stamp(yesterday);
+          input.max = stamp(later);
+        }
+      };
+      var openPicker = function () {
+        if (typeof input.showPicker !== 'function') {
+          return;
+        }
+        try {
+          input.showPicker();
+        } catch (error) {}
+      };
+      var activate = function () {
+        if (input.type === kind) {
+          limit();
+          openPicker();
+          return;
+        }
+        switching = true;
+        input.type = kind;
+        limit();
+        input.focus();
+        switching = false;
+        openPicker();
+      };
+      if (!input.value) {
+        input.type = 'text';
+        input.placeholder = label;
+      }
+      input.addEventListener('pointerdown', activate);
+      input.addEventListener('keydown', function (event) {
+        if (event.key === 'Enter' || event.key === ' ') {
+          activate();
+        }
+      });
+      input.addEventListener('focus', function () {
+        if (switching || input.type === kind) {
+          if (input.type === kind) {
+            limit();
+          }
+          return;
+        }
+        switching = true;
+        window.setTimeout(function () {
+          input.type = kind;
+          limit();
+          input.focus();
+          switching = false;
+          openPicker();
+        }, 0);
+      });
+      input.addEventListener('blur', function () {
+        if (switching || input.value) {
+          return;
+        }
+        window.setTimeout(function () {
+          if (switching || document.activeElement === input || input.value) {
+            return;
+          }
+          input.type = 'text';
+          input.placeholder = label;
+        }, 200);
+      });
+    });
+  }
+
+  function prepareChildSeat(form) {
+    var box = form.querySelector('input[name="mytaxi-child-seat[]"]');
+    var age = form.querySelector('.mt-child-age');
+    if (!box || !age || box.dataset.ready === '1') {
+      return;
+    }
+    box.dataset.ready = '1';
+    var sync = function () {
+      var open = box.checked;
+      age.hidden = !open;
+      age.classList.toggle('is-open', open);
+    };
+    sync();
+    box.addEventListener('change', sync);
+  }
+
+  function stamp(date) {
+    var month = String(date.getMonth() + 1);
+    var day = String(date.getDate());
+    if (month.length < 2) {
+      month = '0' + month;
+    }
+    if (day.length < 2) {
+      day = '0' + day;
+    }
+    return date.getFullYear() + '-' + month + '-' + day;
+  }
 })();
