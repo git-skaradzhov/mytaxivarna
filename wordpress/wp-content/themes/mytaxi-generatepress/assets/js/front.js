@@ -685,6 +685,7 @@
       }
       note = returning ? label('noteBoth') : label('noteOne');
     }
+    note = flow.getAttribute('data-price-note') || note;
     var list = document.createElement('dl');
     if (!note) {
       list.setAttribute('data-confirmed', '');

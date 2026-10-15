@@ -178,6 +178,10 @@ if ( get_the_content() ) {
 	echo '</section>';
 }
 
+if ( ! empty( $contacts['gbp_url'] ) ) {
+	echo '<p class="mt-st-section"><a href="' . esc_url( $contacts['gbp_url'] ) . '">' . esc_html__( 'View this service on Google', 'mytaxi-generatepress' ) . '</a></p>';
+}
+
 get_template_part( 'template-parts/review-sources', null, array( 'reviews' => $reviews ) );
 mytaxi_faqs( $service['faqs'] ?? array() );
 

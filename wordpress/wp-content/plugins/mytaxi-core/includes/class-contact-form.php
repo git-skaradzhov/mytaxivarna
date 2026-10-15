@@ -14,7 +14,7 @@ defined( 'ABSPATH' ) || exit;
  */
 class ContactForm {
 
-	const REVISION = '15';
+	const REVISION = '16';
 
 	/**
 	 * Context of the submission currently being mailed.
@@ -431,7 +431,7 @@ class ContactForm {
 		$zone = new \DateTimeZone( 'Europe/Sofia' );
 		$date = \DateTimeImmutable::createFromFormat( '!Y-m-d', $value, $zone );
 		$now  = new \DateTimeImmutable( 'today', $zone );
-		if ( ! $date || $date->format( 'Y-m-d' ) !== $value || $date < $now->modify( '-1 day' ) || $date > $now->modify( '+18 months' ) ) {
+		if ( ! $date || $date->format( 'Y-m-d' ) !== $value || $date < $now || $date > $now->modify( '+18 months' ) ) {
 			$result->invalidate( $tag, __( 'Enter a date for the journey.', 'mytaxi-core' ) );
 		}
 		return $result;
@@ -621,7 +621,9 @@ class ContactForm {
 		$properties['mail']['additional_headers'] = '';
 		$properties['mail']['attachments']  = '';
 		$properties['mail']['use_html']     = false;
-		$properties['messages']['mail_sent_ok']     = __( 'Thank you. Your request has been sent. Your booking is confirmed after we agree the price and receive a passenger name and flight number.', 'mytaxi-core' );
+		$properties['messages']['mail_sent_ok'] = str_contains( $markup, 'mt-continue' )
+			? __( 'Thank you. Your request has been sent. Your booking is confirmed after we agree the price and receive a passenger name and flight number.', 'mytaxi-core' )
+			: __( 'Thank you. Your taxi request has been sent. The local team will contact you to confirm availability, the price and pickup.', 'mytaxi-core' );
 		$properties['messages']['mail_sent_ng']     = __( 'We couldn’t send your request. Please try again, or use WhatsApp or call this service.', 'mytaxi-core' );
 		$properties['messages']['validation_error'] = __( 'The request was not sent. Correct the fields below.', 'mytaxi-core' );
 		$properties['messages']['accept_terms']     = __( 'Please confirm that you have read the Privacy Policy.', 'mytaxi-core' );
@@ -695,7 +697,7 @@ class ContactForm {
 				'<p class="mt-field"><label><span class="mt-sr">Phone</span> [tel* mytaxi-phone autocomplete:tel placeholder "Phone"]</label></p>',
 				'</div>',
 				'<div class="mt-when">',
-				'<p class="mt-field"><label><span class="mt-sr">Date</span> [date* mytaxi-date class:mt-picker min:yesterday max:+18_months autocomplete:off placeholder "Date"]</label></p>',
+				'<p class="mt-field"><label><span class="mt-sr">Date</span> [date* mytaxi-date class:mt-picker min:today max:+18_months autocomplete:off placeholder "Date"]</label></p>',
 				'<p class="mt-field"><label><span class="mt-sr">Time</span> [text* mytaxi-time class:mt-picker class:mt-picker--time autocomplete:off placeholder "Time"]</label></p>',
 				'</div>',
 				'<div class="mt-pair">',

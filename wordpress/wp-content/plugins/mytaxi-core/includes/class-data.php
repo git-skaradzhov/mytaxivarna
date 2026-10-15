@@ -180,6 +180,7 @@ class Data {
 			'price_type'   => (string) get_post_meta( $id, '_mytaxi_price_type', true ),
 			'price_basis'  => (string) get_post_meta( $id, '_mytaxi_price_basis', true ),
 			'price_sample' => (string) get_post_meta( $id, '_mytaxi_price_sample', true ),
+			'price_demo'   => ( '1' === (string) get_post_meta( $id, '_mytaxi_local_demo_price', true ) || '1' === (string) get_post_meta( $id, '_mytaxi_staging_demo_price', true ) ) ? '1' : '0',
 		);
 
 		return array(
@@ -201,13 +202,33 @@ class Data {
 			'meeting'      => (string) get_post_meta( $id, '_mytaxi_meeting', true ),
 			'delay'        => (string) get_post_meta( $id, '_mytaxi_delay', true ),
 			'requirements' => (string) get_post_meta( $id, '_mytaxi_requirements', true ),
-			'faqs'         => self::faqs( get_post_meta( $id, '_mytaxi_faq', true ) ),
+			'faqs'         => self::route_faqs( $id, Price::present( $meta ) ),
 			'content'      => $post->post_content,
 			'image_id'     => (int) get_post_thumbnail_id( $post ),
 			'meta_title'   => (string) get_post_meta( $id, '_mytaxi_meta_title', true ),
 			'meta_desc'    => (string) get_post_meta( $id, '_mytaxi_meta_description', true ),
 			'contacts'     => Contacts::for_service( $service_id ),
 		);
+	}
+
+	/**
+	 * The price answer is rendered from the same route price as the form and mail.
+	 */
+	private static function route_faqs( $id, array $price ) {
+		$faqs = self::faqs( get_post_meta( $id, '_mytaxi_faq', true ) );
+		$origin = (string) get_post_meta( $id, '_mytaxi_origin', true );
+		$destination = (string) get_post_meta( $id, '_mytaxi_destination', true );
+		$answer = ! empty( $price['offer'] ) && empty( $price['demo'] )
+			? $price['text'] . ' for a one-way transfer, ' . strtolower( $price['basis_label'] ) . '. The return on this route costs the same.'
+			: 'Price on request. Send your journey details or contact the team on WhatsApp for a quote for the car.';
+		if ( ! empty( $price['demo'] ) ) {
+			$answer = 'The amount shown above is for demonstration only, not a confirmed fare. Contact this airport team for the actual price for your journey.';
+		}
+		array_unshift( $faqs, array(
+			'question' => sprintf( 'How much is a transfer from %s to %s?', $origin, $destination ),
+			'answer' => $answer,
+		) );
+		return $faqs;
 	}
 
 	/**

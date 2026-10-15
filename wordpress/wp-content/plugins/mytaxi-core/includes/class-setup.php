@@ -99,6 +99,41 @@ class Setup {
 	}
 
 	/**
+	 * Apply reviewed copy without rerunning installation, contacts or mail settings.
+	 * Safe to repeat: seeded bodies are replaced only while unchanged; FAQs append
+	 * by question and never replace an editor's answers.
+	 */
+	public static function content() {
+		self::apply_search_copy();
+		$transfer_faqs = array(
+			array( 'question' => 'Can I pay by card?', 'answer' => 'Yes. Pay the driver in cash or by card after the transfer. No prepayment is required.' ),
+			array( 'question' => 'Can I book through WhatsApp or Viber?', 'answer' => 'Yes. Use the contact buttons for this airport service and send your date, time, destination and passenger count. The team confirms the price and pickup details with you.' ),
+			array( 'question' => 'Can I request a child seat?', 'answer' => 'Yes. Request a child seat and tell us the child’s age. The seat is free when requested with the transfer, and the team confirms availability before the journey.' ),
+			array( 'question' => 'What happens if my flight is delayed?', 'answer' => 'A delayed flight does not add a waiting charge. Send your flight number and contact this airport team about changes to your arrival. Your pickup arrangements are confirmed with the team.' ),
+			array( 'question' => 'Can I book a 6+1 vehicle?', 'answer' => 'The online form currently accepts 1–5 passengers. For a 6+1 vehicle or another larger-group arrangement, contact the team first to confirm availability, luggage capacity and a quote.' ),
+			array( 'question' => 'Can I pay with Revolut?', 'answer' => 'Cash and card are accepted for airport transfers. Ask the team before the journey whether Revolut is available for your particular booking.' ),
+			array( 'question' => 'Is the service available 24/7?', 'answer' => 'Yes. The airport team is available every day, 24 hours. Online transfer requests must be at least one day ahead; for today, use WhatsApp or call.' ),
+		);
+		foreach ( self::services() as $service ) {
+			if ( 'airport_transfer' === $service['type'] ) {
+				self::add_faqs( 'mytaxi_service', $service['slug'], $transfer_faqs );
+			} else {
+				self::add_faqs( 'mytaxi_service', $service['slug'], array(
+					array( 'question' => 'Can I request a hotel pickup in ' . $service['areas'][0] . '?', 'answer' => 'Yes. Tell this local team the hotel name or exact pickup address and when you need the taxi. The team confirms availability and the fare.' ),
+					array( 'question' => 'How is my local taxi fare confirmed?', 'answer' => 'Ask this local team for a quote for your pickup and destination before you travel. The published airport-transfer fares do not automatically apply to local taxi journeys.' ),
+				) );
+			}
+		}
+		foreach ( self::routes() as $route ) {
+			self::add_faqs( 'mytaxi_route', $route['slug'], array_merge( array(
+				array( 'question' => 'Can you take me directly to my hotel in ' . $route['destination'] . '?', 'answer' => 'This route takes you from ' . $route['origin'] . ' to your hotel or address in ' . $route['destination'] . '. Enter the full drop-off address in the request so the team can confirm the pickup and destination.' ),
+				array( 'question' => 'Can I request the return to ' . $route['origin'] . '?', 'answer' => 'Yes. Select Add a return and enter the return pickup date and time. The return on this route costs the same as the outbound transfer. Contact the team to agree a pickup time that allows enough time for your flight.' ),
+			), $transfer_faqs ) );
+		}
+		update_option( 'mytaxi_content_revision', '1', false );
+	}
+
+	/**
 	 * Service definitions.
 	 *
 	 * @return array<int,array<string,mixed>>
@@ -569,12 +604,9 @@ class Setup {
 
 	/**
 	 * Search descriptions, route copy, and FAQs built from confirmed terms.
-	 * Runs once and only replaces text that is still the seeded version.
+	 * Replaces only text that is still the seeded version; safe to repeat.
 	 */
 	private static function apply_search_copy() {
-		if ( '1' === (string) get_option( 'mytaxi_search_copy_ready', '' ) ) {
-			return;
-		}
 		if ( ! self::find( 'mytaxi_route', 'sofia-airport-to-sofia' ) ) {
 			return;
 		}

@@ -21,5 +21,8 @@ if ( ! $service ) {
 			<?php mytaxi_contact_buttons( $service ); ?>
 		</div>
 	<?php endif; ?>
+	<?php if ( ! empty( $contacts['gbp_url'] ) ) : ?>
+		<p><a href="<?php echo esc_url( $contacts['gbp_url'] ); ?>"><?php esc_html_e( 'View Google Business profile', 'mytaxi-generatepress' ); ?></a></p>
+	<?php endif; ?>
 	<p class="mt-contact-card__more"><a href="<?php echo esc_url( $service['url'] ?? '' ); ?>"><?php esc_html_e( 'View service', 'mytaxi-generatepress' ); ?> <?php mytaxi_icon( 'arrow' ); ?></a></p>
 </article>

@@ -17,7 +17,8 @@
 | `/sofia-airport-to-sofia/` | Маршрут към Sofia Airport Transfers |
 | `/contact/` | Контакти по услуги, без обща форма |
 
-Няма публичен архив на услугите или маршрутите.
+Няма автоматични CPT архиви. Има специални listing страници `/local-taxi/`,
+`/airport-transfers/` и `/routes/`.
 
 ## Намерение при търсене
 
@@ -48,4 +49,7 @@ Schema: Organization за сайта, TaxiService за услуга, Service з�
 | Albena | Taxi Albena | +359896817384 | `/taxi-albena/` |
 | Kranevo | Taxi Kranevo | +359896816334 | `/taxi-kranevo/` |
 | Varna Airport Transfers | Varna Airport Transfers | +359888850884 | `/varna-airport-transfers/` |
-| Sofia Airport Transfers | Sofia Airport Transfers | липсва | `/sofia-airport-transfers/` |
+| Sofia Airport Transfers | Sofia Airport Transfers | +359886330192 | `/sofia-airport-transfers/` |
+
+Sofia Airport Transfers е действаща услуга. Допълнителният домейн е отделно
+решение и не е условие за тази страница. Demo тарифите не дават Offer schema.

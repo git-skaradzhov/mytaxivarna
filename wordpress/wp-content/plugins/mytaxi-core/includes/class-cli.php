@@ -13,6 +13,7 @@ if ( ! class_exists( '\WP_CLI' ) ) {
 	return;
 }
 
+\WP_CLI::add_command( 'mytaxi content', array( Setup::class, 'content' ) );
 \WP_CLI::add_command( 'mytaxi setup', array( Cli::class, 'setup' ) );
 \WP_CLI::add_command( 'mytaxi verify', array( Cli::class, 'verify' ) );
 \WP_CLI::add_command( 'mytaxi mailtest', array( Cli::class, 'mailtest' ) );

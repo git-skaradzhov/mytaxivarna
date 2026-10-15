@@ -3602,3 +3602,22 @@ form.wpcf7-form.mt-form .mt-accept .mt-privacy-link {
   min-height: 44px;
   padding: 0 8px;
 }
+
+/* Keep a consent error below the control instead of pushing its label sideways. */
+form.wpcf7-form.mt-form .mt-accept label {
+  display: grid;
+  grid-template-columns: 20px 1fr;
+}
+form.wpcf7-form.mt-form .mt-accept__control {
+  display: contents;
+}
+form.wpcf7-form.mt-form .mt-accept .wpcf7-form-control-wrap {
+  display: contents;
+}
+form.wpcf7-form.mt-form .mt-accept .wpcf7-not-valid-tip {
+  grid-column: 1 / -1;
+  grid-row: 2;
+}
+form.wpcf7-form.mt-form .mt-accept .wpcf7-list-item {
+  margin: 0;
+}

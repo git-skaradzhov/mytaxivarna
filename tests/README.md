@@ -30,3 +30,21 @@ client-side tampering refusal, ignoring old draft endpoints, navigation through
 Choose another route → routes → Albena, and no horizontal overflow or JS errors.
 The browser check used the normal Price on request data; the confirmed-fare cases
 were exercised by the CF7 tests above. No deployment or real email was performed.
+
+## Requirements completion
+
+```sh
+docker compose run --rm -v "$PWD/tests:/tests:ro" wpcli wp eval-file /tests/requirements-completion.php
+for scenario in today yesterday; do
+  docker compose run --rm -v "$PWD/tests:/tests:ro" wpcli wp eval-file /tests/local-taxi-form.php "$scenario" || break
+done
+docker compose run --rm -v "$PWD/tests:/tests:ro" wpcli php /tests/demo-price-production.php /var/www/html/wp-content/plugins/mytaxi-core/includes/class-price.php
+```
+
+The local requirements script checks content idempotence, preservation of edited
+content/mail options, Sofia, demo pricing, explicit tariff confirmation, Google
+profile schema and local dates. Fixtures are restored. The local-form cases
+intercept all mail in memory. The production/demo check is standalone PHP.
+
+Apply reviewed copy with `docker compose run --rm wpcli wp mytaxi content`.
+This is separate from full setup, preserves contacts/mail and is safe to repeat.

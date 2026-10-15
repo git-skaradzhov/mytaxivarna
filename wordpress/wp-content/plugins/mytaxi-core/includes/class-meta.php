@@ -197,6 +197,9 @@ class Meta {
 			)
 		);
 		Fields::checkbox( 'mytaxi_price_sample', 'Примерна цена', '1' === (string) get_post_meta( $id, '_mytaxi_price_sample', true ), 'С отметка сумата не се показва публично: сайтът пише Price on request и не я подава към Google. Махнете отметката само когато цената е потвърдена от клиента.' );
+		if ( '1' === (string) get_post_meta( $id, '_mytaxi_local_demo_price', true ) || '1' === (string) get_post_meta( $id, '_mytaxi_staging_demo_price', true ) ) {
+			Fields::checkbox( 'mytaxi_confirm_demo_price', 'Потвърждавам демонстрационната тарифа като реална', false, 'Отметнете само след изрично клиентско потвърждение. Обикновен запис на маршрута не превръща demo сумата в реална оферта.' );
+		}
 		Fields::end_section();
 
 		Fields::section( 'Пътуване', 'Показват се само попълнените редове.' );
@@ -298,7 +301,8 @@ class Meta {
 			wp_unslash( $_POST['mytaxi_price'] ?? '' ),
 			wp_unslash( $_POST['mytaxi_price_type'] ?? 'on_request' ),
 			wp_unslash( $_POST['mytaxi_price_basis'] ?? '' ),
-			isset( $_POST['mytaxi_price_sample'] )
+			isset( $_POST['mytaxi_price_sample'] ),
+			isset( $_POST['mytaxi_confirm_demo_price'] )
 		);
 		update_post_meta( $post_id, '_mytaxi_distance', sanitize_text_field( wp_unslash( $_POST['mytaxi_distance'] ?? '' ) ) );
 		update_post_meta( $post_id, '_mytaxi_duration', sanitize_text_field( wp_unslash( $_POST['mytaxi_duration'] ?? '' ) ) );
@@ -328,7 +332,7 @@ class Meta {
 	 * @param mixed  $basis   per_vehicle, per_passenger, or empty.
 	 * @param bool   $sample  Price is a sample, not confirmed.
 	 */
-	public static function store_price( $post_id, $raw, $type, $basis, $sample ) {
+	public static function store_price( $post_id, $raw, $type, $basis, $sample, $confirm_demo = false ) {
 		$type  = sanitize_text_field( (string) $type );
 		$basis = sanitize_text_field( (string) $basis );
 		if ( ! in_array( $type, array( 'fixed', 'from', 'on_request' ), true ) ) {
@@ -346,6 +350,10 @@ class Meta {
 		update_post_meta( $post_id, '_mytaxi_price_type', $type );
 		update_post_meta( $post_id, '_mytaxi_price_basis', $basis );
 		update_post_meta( $post_id, '_mytaxi_price_sample', '' !== $amount && $sample ? '1' : '0' );
+		if ( $confirm_demo && ! $sample ) {
+			delete_post_meta( $post_id, '_mytaxi_local_demo_price' );
+			delete_post_meta( $post_id, '_mytaxi_staging_demo_price' );
+		}
 	}
 
 	/**

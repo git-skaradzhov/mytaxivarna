@@ -204,6 +204,7 @@ class Booking {
 			);
 		}
 
+		$demo_note = ! empty( $price['demo'] ) ? __( 'Demonstration price only. The team must confirm the actual fare.', 'mytaxi-core' ) : '';
 		$one = (string) $price['text'];
 		if ( ! $return ) {
 			return array(
@@ -214,7 +215,7 @@ class Booking {
 						'value' => $one,
 					),
 				),
-				'note'      => '',
+				'note'      => $demo_note,
 			);
 		}
 		return array(
@@ -233,7 +234,7 @@ class Booking {
 					'value' => self::euro( 2 * (float) $price['amount'] ),
 				),
 			),
-			'note'      => '',
+			'note'      => $demo_note,
 		);
 	}
 

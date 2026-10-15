@@ -219,6 +219,9 @@ class Seo {
 			'url'      => $service['url'],
 			'provider' => array( '@id' => home_url( '/#organization' ) ),
 		);
+		if ( ! empty( $service['contacts']['gbp_url'] ) ) {
+			$data['sameAs'] = array( $service['contacts']['gbp_url'] );
+		}
 		if ( ! empty( $service['intro'] ) ) {
 			$data['description'] = self::public_copy( (string) $service['intro'] );
 		}
@@ -253,7 +256,7 @@ class Seo {
 		}
 		$price  = $route['price'];
 		$sample = '1' === (string) get_post_meta( (int) $route['id'], '_mytaxi_price_sample', true );
-		if ( ! $sample && ! empty( $price['offer'] ) && null !== $price['amount'] ) {
+		if ( ! $sample && empty( $price['demo'] ) && ! empty( $price['offer'] ) && null !== $price['amount'] ) {
 			$offer = array(
 				'@type'         => 'Offer',
 				'url'           => $route['url'],

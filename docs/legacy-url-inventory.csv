@@ -1,0 +1,23 @@
+old_url,http_status,final_url,title,old_canonical,proposed_new_url,decision
+https://mytaxivarna.com/,200,https://mytaxivarna.com/,Taxi Golden Sands - MyTaxi 24/7,,https://mytaxivarna.com/,mapped_needs_review
+https://mytaxivarna.com/golden-sands,200,https://mytaxivarna.com/golden-sands,Taxi to Golden Sands | Explore Bulgaria's Coastal Gem,,https://mytaxivarna.com/taxi-golden-sands/,mapped_needs_review
+https://mytaxivarna.com/albena,200,https://mytaxivarna.com/albena,Taxi to Albena | Explore Bulgaria's Coastal Gem,,https://mytaxivarna.com/taxi-albena/,mapped_needs_review
+https://mytaxivarna.com/kranevo,200,https://mytaxivarna.com/kranevo,Taxi to Kranevo | Explore Bulgaria's Coastal Gem,,https://mytaxivarna.com/taxi-kranevo/,mapped_needs_review
+https://mytaxivarna.com/destinations/varna-to-golden-sands,404,https://mytaxivarna.com/destinations/varna-to-golden-sands,,,https://mytaxivarna.com/varna-airport-to-golden-sands/,mapped_needs_review
+https://mytaxivarna.com/destinations/varna-to-albena,404,https://mytaxivarna.com/destinations/varna-to-albena,,,https://mytaxivarna.com/varna-airport-to-albena/,mapped_needs_review
+https://mytaxivarna.com/destinations/varna-to-kranevo,404,https://mytaxivarna.com/destinations/varna-to-kranevo,,,https://mytaxivarna.com/varna-airport-to-kranevo/,mapped_needs_review
+https://mytaxivarna.com/destinations/varna-to-balchik,404,https://mytaxivarna.com/destinations/varna-to-balchik,,,https://mytaxivarna.com/varna-airport-to-balchik/,mapped_needs_review
+https://mytaxivarna.com/balchik,200,https://mytaxivarna.com/balchik,Taxi to Balchik | Explore Bulgaria's Coastal Gem,,,decision_required
+https://mytaxivarna.com/blog,200,https://mytaxivarna.com/blog,Blog - Discover taxi around Golden Sands,,,decision_required
+https://mytaxivarna.com/take-taxi,200,https://mytaxivarna.com/take-taxi,Order Taxi from Golden Sands via GPS | MyTaxi 24/7,,,decision_required
+https://mytaxivarna.com/contact,200,https://mytaxivarna.com/contact,Contact MyTaxi Golden Sands | Premier Taxi Service in Bulgaria,,https://mytaxivarna.com/contact/,mapped_needs_review
+https://taxialbena.com/,200,https://taxialbena.com/,Taxi Albena,,https://mytaxivarna.com/taxi-albena/,mapped_needs_review
+https://taxikranevo.com/,200,https://taxikranevo.com/,TAXI-KRANEVO SUPER TAXI,,https://mytaxivarna.com/taxi-kranevo/,mapped_needs_review
+https://airporttaxitransfersvarna.com/,200,https://airporttaxitransfersvarna.com/,Airport Taxi Transfers Varna,,https://mytaxivarna.com/varna-airport-transfers/,mapped_needs_review
+https://airporttaxitransfersvarna.com/destinations/varna-to-golden-sands,404,https://airporttaxitransfersvarna.com/destinations/varna-to-golden-sands,,,https://mytaxivarna.com/varna-airport-to-golden-sands/,mapped_needs_review
+https://airporttaxitransfersvarna.com/destinations/varna-to-albena,404,https://airporttaxitransfersvarna.com/destinations/varna-to-albena,,,https://mytaxivarna.com/varna-airport-to-albena/,mapped_needs_review
+https://airporttaxitransfersvarna.com/destinations/varna-to-kranevo,404,https://airporttaxitransfersvarna.com/destinations/varna-to-kranevo,,,https://mytaxivarna.com/varna-airport-to-kranevo/,mapped_needs_review
+https://airporttaxitransfersvarna.com/destinations/varna-to-balchik,404,https://airporttaxitransfersvarna.com/destinations/varna-to-balchik,,,https://mytaxivarna.com/varna-airport-to-balchik/,mapped_needs_review
+https://airporttaxitransfersvarna.com/destinations/varna-to-sunny-beach,404,https://airporttaxitransfersvarna.com/destinations/varna-to-sunny-beach,,,,decision_required
+https://airporttaxitransfersvarna.com/destinations/varna-to-burgas,404,https://airporttaxitransfersvarna.com/destinations/varna-to-burgas,,,,decision_required
+https://airporttaxitransfersvarna.com/destinations/varna-to-bucharest,404,https://airporttaxitransfersvarna.com/destinations/varna-to-bucharest,,,,decision_required

@@ -23,8 +23,9 @@ class Price {
 	public static function present( array $meta ) {
 		$type   = isset( $meta['price_type'] ) ? (string) $meta['price_type'] : 'on_request';
 		$basis  = isset( $meta['price_basis'] ) ? (string) $meta['price_basis'] : '';
+		$demo = '1' === (string) ( $meta['price_demo'] ?? '' );
 		$amount = Fields::price( isset( $meta['price'] ) ? (string) $meta['price'] : '' );
-		if ( '1' === (string) ( $meta['price_sample'] ?? '' ) ) {
+		if ( '1' === (string) ( $meta['price_sample'] ?? '' ) || ( $demo && 'production' === wp_get_environment_type() ) ) {
 			$amount = '';
 		}
 
@@ -51,6 +52,7 @@ class Price {
 				'basis'       => $basis,
 				'basis_label' => $basis_label,
 				'offer'       => false,
+				'demo'        => false,
 			);
 		}
 
@@ -64,13 +66,14 @@ class Price {
 			: $formatted;
 
 		return array(
-			'text'        => $text,
+			'text'        => $demo ? $text . ' (demo)' : $text,
 			'amount'      => (float) $amount,
 			'currency'    => 'EUR',
 			'type'        => $type,
 			'basis'       => $basis,
 			'basis_label' => $basis_label,
 			'offer'       => true,
+			'demo'        => $demo,
 		);
 	}
 
