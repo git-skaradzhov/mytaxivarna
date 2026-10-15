@@ -1,0 +1,41 @@
+{
+  "verified_on": "2026-10-15",
+  "verification": "Google Maps detail page: business name, phone and website domain checked directly.",
+  "profiles": [
+    {
+      "service_slug": "taxi-golden-sands",
+      "google_name": "Taxi Golden Sands - MyTaxi 24/7",
+      "phone": "+359884811045",
+      "website_domain": "mytaxivarna.com",
+      "google_url": "https://www.google.com/maps/place/?q=place_id:ChIJwV4ED6N0RWgRJD4xQKeSsck"
+    },
+    {
+      "service_slug": "taxi-albena",
+      "google_name": "Taxi Service around Albena - Taxi Albena",
+      "phone": "+359896817384",
+      "website_domain": "taxialbena.com",
+      "google_url": "https://www.google.com/maps/place/?q=place_id:ChIJpd4Sg8f9pEAR1MbqDgJPV98"
+    },
+    {
+      "service_slug": "taxi-kranevo",
+      "google_name": "TAXI-KRANEVO SUPER TAXI",
+      "phone": "+359896816334",
+      "website_domain": "taxikranevo.com",
+      "google_url": "https://www.google.com/maps/place/?q=place_id:ChIJWUKc3Wr9pEARhTR6ZZSykYk"
+    },
+    {
+      "service_slug": "varna-airport-transfers",
+      "google_name": "Airport Taxi Transfers Varna",
+      "phone": "+359888850884",
+      "website_domain": "airporttaxitransfersvarna.com",
+      "google_url": "https://www.google.com/maps/place/?q=place_id:ChIJJ_1np4-MxoMRhcZlngGuF18"
+    }
+  ],
+  "unresolved": [
+    {
+      "service_slug": "sofia-airport-transfers",
+      "phone": "+359886330192",
+      "reason": "No reliable Google Maps match for the confirmed phone. The service remains active."
+    }
+  ]
+}
