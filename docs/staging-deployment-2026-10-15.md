@@ -54,3 +54,28 @@ restrictive umask to backup creation.
 The existing local-taxi success wording and yesterday-date validation issues in
 [the customer review](customer-testing-guide.md) were not changed by deployment.
 Real mobile devices, Safari, screen readers and real mail delivery remain untested.
+
+## Последващ requirements release — 15 октомври 2026
+
+По изрично потвърждение целта отново е демото, не реалният mytaxivarna.com.
+Branch `feat/requirements-completion` е включен чрез fast-forward в main и
+implementation commit `7a297ff` е качен на staging. Преди обновяването е направен
+нов частен DB backup извън web root, с права 0600. Git pull е с umask 022.
+
+След code deployment е изпълнен `~/bin/wp mytaxi content` и cache flush.
+Проверено: content revision 1, индивидуален Sofia текст и 15 route FAQ,
+запазени staging/noindex/test mode и празен production получател.
+
+Chrome 1440/390: празна стъпка, днес, валидно преминаване, Edit journey,
+връщане и €45 (demo) + €45 (demo) = €90 с изрична demo бележка. Контактите
+са за Varna Airport Transfers; няма overflow или JS грешки. Проверени са
+индивидуалното съдържание/FAQ на Sofia, липсата на demo Offer schema,
+местният date minimum днес и Privacy grid/44 px. Непопълнените GBP връзки
+не се представят с измислени профили. Местното CF7 съобщение вече не споменава полет.
+
+Една нова синтетична заявка е прихваната преди транспорта в частен capture,
+с правилния маршрут, €90 и demo бележка. Не е изпращана реална поща.
+Реалният mytaxivarna.com, старите сайтове и production redirects са непроменени.
+
+Пълната историческа SEO миграция, потвърдените GBP URL адреси и останалите
+външни зависимости в requirements плана остават незавършени.
