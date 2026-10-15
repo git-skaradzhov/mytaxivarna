@@ -53,3 +53,35 @@ docker compose up -d
 ## Хостинг
 
 Сървърните фрагменти са за nginx и Apache. Ако хостингът е друг, се пренасят същите цели от `docs/redirect-map.csv`.
+
+## Staging: mytaxivarna.skaradzhov.com
+
+- Кодът се качва само от `main` след изрично възложени merge и deployment.
+- SSH: `vita.superhosting.bg`, порт `1022`, потребител `anheldes`, ключ
+  `~/.ssh/bgfishmap_deploy`. Ключът не се копира в репото.
+- Репо на сървъра: `/home/anheldes/mytaxivarna`; WordPress: `wordpress/`.
+  WP-CLI е `~/bin/wp` (не е в PATH).
+- Преди промяна: проверете чисто tracked Git състояние, текущия commit и
+  направете частен backup на базата извън web root с права `0600`.
+- Среда `staging`, `blog_public=0`, тестов режим и синтетичен тестов получател.
+  Не се използва реален production получател.
+- `mytaxi-staging-mail.php` прихваща всички `wp_mail` писма преди транспорта.
+  Записва ги в частната папка, върната от `mytaxi_staging_mail_directory()`
+  под системната временна директория, с права `0700` и файлове `0600`.
+  Не се използват SMTP/PHP mail; грешка при запис отказва изпращането.
+  Локалната среда продължава да използва Mailpit; production не се променя.
+- Папката с писма е достъпна само през SSH. Не публикувайте съдържанието ѝ.
+  Изтривайте синтетичните captures след преглед; за евентуални други заявки
+  определете отделна политика за съхранение. Това не е production inbox.
+- Локално: `git push origin main`. На сървъра:
+  `cd /home/anheldes/mytaxivarna && git pull --ff-only origin main`.
+- При нужда от снимки: синхронизирайте
+  `wordpress/wp-content/mytaxi-photo-import/` към същата папка с `rsync`,
+  **без `--delete`**, после от `wordpress/` пуснете `~/bin/wp mytaxi photos`.
+- `~/bin/wp mytaxi setup` дописва празни потвърдени полета и не сменя
+  тестовия режим. Не копирайте локална база или `.env` върху staging.
+- Примерните цени се настройват отделно в staging базата само за демонстрация.
+  Не ги третирайте като потвърдени production тарифи.
+- Не включвайте `deploy/redirects.apache.conf` или `deploy/redirects.nginx.conf`.
+- След качване: noindex, форми, Edit journey, връщане/цена, контакти,
+  mobile и една синтетична заявка, прихваната само в частната папка.
