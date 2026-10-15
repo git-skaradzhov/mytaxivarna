@@ -251,8 +251,9 @@ class Seo {
 		if ( ! empty( $route['summary'] ) ) {
 			$data['description'] = self::public_copy( (string) $route['summary'] );
 		}
-		$price = $route['price'];
-		if ( ! empty( $price['offer'] ) && null !== $price['amount'] ) {
+		$price  = $route['price'];
+		$sample = '1' === (string) get_post_meta( (int) $route['id'], '_mytaxi_price_sample', true );
+		if ( ! $sample && ! empty( $price['offer'] ) && null !== $price['amount'] ) {
 			$offer = array(
 				'@type'         => 'Offer',
 				'url'           => $route['url'],

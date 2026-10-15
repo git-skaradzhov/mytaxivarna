@@ -7,117 +7,194 @@
 
 defined( 'ABSPATH' ) || exit;
 
-mytaxi_open();
-while ( have_posts() ) :
-	the_post();
-	$service  = class_exists( '\MyTaxi\Core\Data' ) ? \MyTaxi\Core\Data::service( get_the_ID() ) : array();
-	$routes   = class_exists( '\MyTaxi\Core\Data' ) ? \MyTaxi\Core\Data::routes_for_service( get_the_ID() ) : array();
-	$airport  = isset( $service['type'] ) && 'airport_transfer' === $service['type'];
-	$transfer = $airport ? array() : mytaxi_transfer_for_local( $service );
-	$phone    = $service['contacts']['phone'] ?? '';
-	?>
-	<?php mytaxi_breadcrumbs(); ?>
-	<header class="mt-hero">
-		<div class="mt-hero__copy">
-			<p class="mt-kicker"><?php echo esc_html( $service['type_label'] ?? '' ); ?></p>
-			<h1><?php the_title(); ?></h1>
-			<?php mytaxi_text( $service['intro'] ?? '' ); ?>
-			<?php if ( $phone ) : ?>
-				<p class="mt-phone"><a href="<?php echo esc_url( $service['contacts']['phone_href'] ); ?>"><?php mytaxi_icon( 'phone' ); ?><span><?php echo esc_html( mytaxi_phone_text( $phone ) ); ?></span></a></p>
-			<?php endif; ?>
-			<div class="mt-actions">
-				<?php mytaxi_contact_buttons( $service ); ?>
-				<?php if ( $airport ) : ?>
-					<a class="mt-btn mt-btn--ghost" href="#request"><span><?php esc_html_e( 'Request a quote', 'mytaxi-generatepress' ); ?></span><?php mytaxi_icon( 'arrow' ); ?></a>
-				<?php endif; ?>
-			</div>
-		</div>
-		<div class="mt-hero__media">
-			<?php mytaxi_picture( $service['slug'] ?? '', (int) ( $service['image_id'] ?? 0 ), get_the_title(), true ); ?>
-		</div>
-	</header>
+the_post();
+$service  = class_exists( '\MyTaxi\Core\Data' ) ? \MyTaxi\Core\Data::service( get_the_ID() ) : array();
+$routes   = class_exists( '\MyTaxi\Core\Data' ) ? \MyTaxi\Core\Data::routes_for_service( get_the_ID() ) : array();
+$reviews  = class_exists( '\MyTaxi\Core\Data' ) ? \MyTaxi\Core\Data::review_sources( get_the_ID() ) : array();
+$airport  = 'airport_transfer' === ( $service['type'] ?? '' );
+$place    = mytaxi_place_name( get_the_title() );
+$from     = mytaxi_routes_from( $routes );
+$phone    = (string) ( $service['contacts']['phone'] ?? '' );
+$contacts = (array) ( $service['contacts'] ?? array() );
 
-	<?php if ( ! empty( $service['areas'] ) || $phone ) : ?>
-		<ul class="mt-facts mt-facts--row">
-			<?php if ( ! empty( $service['areas'] ) ) : ?>
-				<li><?php mytaxi_icon( 'pin' ); ?><span><strong><?php echo esc_html( $airport ? __( 'Pickup', 'mytaxi-generatepress' ) : __( 'Pickup area', 'mytaxi-generatepress' ) ); ?></strong><?php echo esc_html( implode( ', ', $service['areas'] ) ); ?></span></li>
-			<?php endif; ?>
-			<?php if ( $phone ) : ?>
-				<li><?php mytaxi_icon( 'phone' ); ?><span><strong><?php esc_html_e( 'Phone', 'mytaxi-generatepress' ); ?></strong><a href="<?php echo esc_url( $service['contacts']['phone_href'] ); ?>"><?php echo esc_html( mytaxi_phone_text( $phone ) ); ?></a></span></li>
-			<?php endif; ?>
-			<?php if ( ! empty( $service['hours'] ) ) : ?>
-				<li><span><strong><?php esc_html_e( 'Hours', 'mytaxi-generatepress' ); ?></strong><?php echo esc_html( $service['hours'] ); ?></span></li>
-			<?php endif; ?>
-		</ul>
-	<?php endif; ?>
+if ( $airport ) {
+	mytaxi_open(
+		'template-parts/home-hero',
+		array(
+			'routes' => $routes,
+			'photo'  => mytaxi_page_photo( (string) ( $service['slug'] ?? '' ) ),
+			'title'  => get_the_title(),
+			'lede'   => (string) ( $service['intro'] ?? '' ),
+			'crumbs' => true,
+			'local'  => false,
+		)
+	);
+} else {
+	mytaxi_open(
+		'template-parts/page-hero',
+		array(
+			'kicker'  => (string) ( $service['type_label'] ?? '' ),
+			'title'   => get_the_title(),
+			'lede'    => (string) ( $service['intro'] ?? '' ),
+			'photo'   => mytaxi_page_photo( (string) ( $service['slug'] ?? '' ) ),
+			'service' => $service,
+		)
+	);
+}
 
-	<div class="mt-split">
-		<div class="mt-stack">
-			<?php if ( get_the_content() ) : ?>
-				<div class="mt-prose"><?php the_content(); ?></div>
-			<?php endif; ?>
+get_template_part(
+	'template-parts/strip',
+	null,
+	array(
+		'items' => array(
+			array(
+				'icon'  => 'pin',
+				'value' => implode( ', ', (array) ( $service['areas'] ?? array() ) ),
+				'label' => $airport ? __( 'pickup in Arrivals', 'mytaxi-generatepress' ) : __( 'pickup area', 'mytaxi-generatepress' ),
+			),
+			array(
+				'icon'  => 'card',
+				'value' => $airport ? $from : '',
+				'label' => __( 'for the car, not per person', 'mytaxi-generatepress' ),
+			),
+			array(
+				'icon'  => 'clock',
+				'value' => ! empty( $service['hours'] ) ? __( '24/7', 'mytaxi-generatepress' ) : '',
+				'label' => (string) ( $service['hours'] ?? '' ),
+			),
+			array(
+				'icon'  => 'phone',
+				'value' => $airport ? '' : mytaxi_phone_text( $phone ),
+				'label' => __( 'call, WhatsApp or Viber', 'mytaxi-generatepress' ),
+			),
+		),
+	)
+);
 
-			<?php if ( $routes ) : ?>
-				<section class="mt-section">
-					<h2><?php echo esc_html( $airport ? sprintf( __( 'Destinations from %s', 'mytaxi-generatepress' ), mytaxi_place_name( get_the_title() ) ) : __( 'Where would you like to go?', 'mytaxi-generatepress' ) ); ?></h2>
-					<?php if ( $airport ) : ?>
-						<p><?php esc_html_e( 'Choose a route for your destination or send a transfer request.', 'mytaxi-generatepress' ); ?></p>
-					<?php endif; ?>
-					<div class="mt-route-list">
-						<?php foreach ( $routes as $route ) : ?>
-							<?php get_template_part( 'template-parts/route-card', null, array( 'route' => $route, 'variant' => 'row' ) ); ?>
-						<?php endforeach; ?>
-					</div>
-				</section>
-			<?php endif; ?>
+if ( $airport ) {
+	get_template_part(
+		'template-parts/route-tiles',
+		null,
+		array(
+			'id'      => 'destinations',
+			'routes'  => $routes,
+			'heading' => sprintf( __( 'Destinations from %s', 'mytaxi-generatepress' ), $place ),
+			'text'    => mytaxi_routes_sample( $routes ) ? __( 'Sample prices for the car. The team confirms the price with you before the transfer.', 'mytaxi-generatepress' ) : __( 'Prices are for the car, not per person.', 'mytaxi-generatepress' ),
+		)
+	);
 
-			<?php if ( ! empty( $service['benefits'] ) ) : ?>
-				<section class="mt-section">
-					<h2><?php esc_html_e( 'How it works', 'mytaxi-generatepress' ); ?></h2>
-					<ul class="mt-list">
-						<?php foreach ( $service['benefits'] as $benefit ) : ?>
-							<li><?php echo esc_html( $benefit ); ?></li>
-						<?php endforeach; ?>
-					</ul>
-				</section>
-			<?php endif; ?>
-		</div>
-		<aside class="mt-form-card" id="request">
-			<h2><?php echo esc_html( $airport ? __( 'Request your transfer', 'mytaxi-generatepress' ) : __( 'Request a local taxi', 'mytaxi-generatepress' ) ); ?></h2>
-			<?php if ( class_exists( '\MyTaxi\Core\ContactForm' ) && \MyTaxi\Core\ContactForm::can_send() ) : ?>
-				<p><?php echo esc_html( $airport ? __( 'This form asks for a quote. It does not confirm the transfer.', 'mytaxi-generatepress' ) : __( 'This form asks for a car. It does not confirm the journey.', 'mytaxi-generatepress' ) ); ?></p>
-			<?php endif; ?>
-			<?php get_template_part( 'template-parts/inquiry-form', null, array( 'service_id' => get_the_ID(), 'route_id' => 0 ) ); ?>
-		</aside>
-	</div>
+	get_template_part(
+		'template-parts/photo-cards',
+		null,
+		array(
+			'heading' => __( 'All set before you land', 'mytaxi-generatepress' ),
+			'items'   => mytaxi_airport_cards( $service ),
+		)
+	);
 
-	<?php get_template_part( 'template-parts/transfer-vehicle', null, array( 'service' => $service ) ); ?>
+	get_template_part(
+		'template-parts/vehicles',
+		null,
+		array(
+			'items' => mytaxi_vehicle_items( $service, $from ),
+			'link'  => '#destinations',
+		)
+	);
 
-	<?php if ( $transfer ) : ?>
-		<section class="mt-band mt-band--photo">
-			<div>
-				<p class="mt-kicker"><?php echo esc_html( $transfer['service']['title'] ?? '' ); ?></p>
-				<h2><?php echo esc_html( sprintf( __( 'Arriving at %s?', 'mytaxi-generatepress' ), $transfer['origin'] ) ); ?></h2>
-				<a class="mt-btn mt-btn--yellow" href="<?php echo esc_url( $transfer['url'] ); ?>"><?php echo esc_html( $transfer['origin'] . ' → ' . $transfer['destination'] ); ?></a>
-			</div>
-			<div class="mt-band__media">
-				<?php mytaxi_picture( $transfer['slug'] ?? '', (int) ( $transfer['image_id'] ?? 0 ), $transfer['title'] ?? '' ); ?>
-			</div>
-		</section>
-	<?php endif; ?>
+	get_template_part(
+		'template-parts/steps',
+		null,
+		array_merge(
+			mytaxi_transfer_steps(),
+			array( 'image_id' => (int) ( $service['vehicle_id'] ?? 0 ) )
+		)
+	);
 
-	<?php if ( ! empty( $service['gallery'] ) ) : ?>
-		<section class="mt-section">
-			<h2><?php esc_html_e( 'Photos', 'mytaxi-generatepress' ); ?></h2>
-			<div class="mt-gallery">
-				<?php foreach ( $service['gallery'] as $image_id ) : ?>
-					<?php mytaxi_image( (int) $image_id, 'mytaxi-card', get_the_title() ); ?>
-				<?php endforeach; ?>
-			</div>
-		</section>
-	<?php endif; ?>
+	get_template_part( 'template-parts/travel-needs', null, array( 'url' => '#destinations', 'label' => __( 'Choose your destination', 'mytaxi-generatepress' ) ) );
 
-	<?php mytaxi_faqs( $service['faqs'] ?? array() ); ?>
-	<?php
-endwhile;
+	get_template_part(
+		'template-parts/request-section',
+		null,
+		array(
+			'service' => $service,
+			'heading' => __( 'Going somewhere else?', 'mytaxi-generatepress' ),
+			'text'    => sprintf( __( 'Send a request for any pickup or drop-off from %s. The team replies with a price and confirms the details with you.', 'mytaxi-generatepress' ), $place ),
+		)
+	);
+} else {
+	get_template_part(
+		'template-parts/photo-row',
+		null,
+		array(
+			'ids'     => (array) ( $service['gallery'] ?? array() ),
+			'heading' => __( 'Our cars', 'mytaxi-generatepress' ),
+			'alt'     => get_the_title(),
+		)
+	);
+
+	get_template_part(
+		'template-parts/request-section',
+		null,
+		array(
+			'service' => $service,
+			'heading' => __( 'Request a local taxi', 'mytaxi-generatepress' ),
+			'text'    => __( 'Tell us your pickup, destination, and time. This sends a request; the team confirms the car with you.', 'mytaxi-generatepress' ),
+		)
+	);
+
+	get_template_part( 'template-parts/travel-needs', null, array( 'label' => __( 'Request a taxi', 'mytaxi-generatepress' ) ) );
+
+	$transfer = mytaxi_transfer_for_local( $service );
+	if ( $transfer ) {
+		get_template_part(
+			'template-parts/route-tiles',
+			null,
+			array(
+				'routes'     => array( $transfer ),
+				'heading'    => sprintf( __( 'Arriving at %s?', 'mytaxi-generatepress' ), (string) $transfer['origin'] ),
+				'text'       => sprintf( __( 'Arrange your transfer to %s before you fly.', 'mytaxi-generatepress' ), (string) $transfer['destination'] ),
+				'more_url'   => home_url( '/airport-transfers/' ),
+				'more_label' => __( 'All airport transfers', 'mytaxi-generatepress' ),
+			)
+		);
+	}
+}
+
+if ( $airport ) {
+	get_template_part(
+		'template-parts/photo-row',
+		null,
+		array(
+			'ids'     => (array) ( $service['gallery'] ?? array() ),
+			'heading' => __( 'Photos', 'mytaxi-generatepress' ),
+			'alt'     => get_the_title(),
+		)
+	);
+}
+
+if ( get_the_content() ) {
+	echo '<section class="mt-st-section mt-prose">';
+	the_content();
+	echo '</section>';
+}
+
+get_template_part( 'template-parts/review-sources', null, array( 'reviews' => $reviews ) );
+mytaxi_faqs( $service['faqs'] ?? array() );
+
+if ( $airport ) {
+	mytaxi_cta(
+		(string) ( $service['cta'] ?? '' ) ?: get_the_title(),
+		__( 'Choose your destination, or send a request for any other address.', 'mytaxi-generatepress' ),
+		'#request',
+		__( 'Request a quote', 'mytaxi-generatepress' )
+	);
+} elseif ( ! empty( $contacts['phone_href'] ) ) {
+	mytaxi_cta(
+		(string) ( $service['cta'] ?? '' ) ?: get_the_title(),
+		trim( (string) ( $service['hours'] ?? '' ) . ' ' . mytaxi_phone_text( $phone ) ),
+		(string) $contacts['phone_href'],
+		__( 'Call now', 'mytaxi-generatepress' )
+	);
+}
+
 mytaxi_close();

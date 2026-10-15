@@ -36,6 +36,12 @@ function mytaxi_body_class( $classes ) {
 	if ( is_singular( array( 'mytaxi_service', 'mytaxi_route' ) ) ) {
 		$classes[] = 'mt-has-bar';
 	}
+	if ( is_singular( 'mytaxi_route' ) ) {
+		$classes[] = 'mt-route-sun';
+	}
+	if ( is_front_page() || is_singular( array( 'mytaxi_service', 'mytaxi_route' ) ) || is_page( array( 'airport-transfers', 'routes', 'local-taxi', 'contact' ) ) ) {
+		$classes[] = 'mt-st';
+	}
 	return $classes;
 }
 
@@ -58,7 +64,7 @@ function mytaxi_header() {
 		echo '<a class="mt-nav__link' . ( $item['current'] ? ' is-current' : '' ) . '" href="' . esc_url( $item['url'] ) . '">' . esc_html( $item['label'] ) . '</a>';
 	}
 	$contact = $items['contact'];
-	echo '<a class="mt-btn mt-btn--ghost' . ( $contact['current'] ? ' is-current' : '' ) . '" href="' . esc_url( $contact['url'] ) . '">' . esc_html__( 'Contact us', 'mytaxi-generatepress' ) . '</a>';
+	echo '<a class="mt-btn mt-btn--yellow' . ( $contact['current'] ? ' is-current' : '' ) . '" href="' . esc_url( $contact['url'] ) . '">' . esc_html__( 'Contact us', 'mytaxi-generatepress' ) . '</a>';
 	echo '</nav></div></header>';
 }
 
@@ -185,15 +191,21 @@ function mytaxi_footer() {
 	echo '<p class="mt-legal">';
 	echo '<a href="' . esc_url( home_url( '/privacy-policy/' ) ) . '">' . esc_html__( 'Privacy policy', 'mytaxi-generatepress' ) . '</a>';
 	echo '<a href="' . esc_url( home_url( '/terms/' ) ) . '">' . esc_html__( 'Terms', 'mytaxi-generatepress' ) . '</a>';
-	echo '<a href="#photo-credits">' . esc_html__( 'Photo credits', 'mytaxi-generatepress' ) . '</a>';
-	echo '</p>';
-	echo '<p class="mt-credits" id="photo-credits">';
-	$credits = array();
-	foreach ( mytaxi_photo_credits() as $credit ) {
-		$credits[] = '<a href="' . esc_url( $credit['url'] ) . '">' . esc_html( $credit['label'] . ', ' . $credit['author'] . ', ' . $credit['license'] ) . '</a>';
+	$credits = mytaxi_photo_credits();
+	if ( $credits ) {
+		echo '<a href="#photo-credits">' . esc_html__( 'Photo credits', 'mytaxi-generatepress' ) . '</a>';
 	}
-	echo wp_kses_post( implode( ' · ', $credits ) );
-	echo '</p></div></div>';
+	echo '</p>';
+	if ( $credits ) {
+		echo '<p class="mt-credits" id="photo-credits">';
+		$lines = array();
+		foreach ( $credits as $credit ) {
+			$lines[] = '<a href="' . esc_url( $credit['url'] ) . '">' . esc_html( $credit['label'] . ', ' . $credit['author'] . ', ' . $credit['license'] ) . '</a>';
+		}
+		echo wp_kses_post( implode( ' · ', $lines ) );
+		echo '</p>';
+	}
+	echo '</div></div>';
 }
 
 /**
@@ -205,6 +217,14 @@ function mytaxi_mobile_bar() {
 	}
 	$service = mytaxi_current_service();
 	echo '<div class="mt-mobile-bar" data-mobile-bar>';
+	if ( is_singular( 'mytaxi_route' ) ) {
+		if ( $service && ! empty( $service['contacts']['whatsapp_url'] ) ) {
+			echo '<a class="mt-btn mt-btn--teal" href="' . esc_url( $service['contacts']['whatsapp_url'] ) . '">WhatsApp</a>';
+		}
+		echo '<a class="mt-btn mt-btn--yellow" href="#request"><span>' . esc_html__( 'Request', 'mytaxi-generatepress' ) . '</span></a>';
+		echo '</div>';
+		return;
+	}
 	if ( $service && ! empty( $service['contacts']['whatsapp_url'] ) ) {
 		echo '<a class="mt-btn mt-btn--yellow" href="' . esc_url( $service['contacts']['whatsapp_url'] ) . '">WhatsApp</a>';
 	}

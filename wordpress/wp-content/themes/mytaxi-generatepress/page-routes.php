@@ -7,47 +7,69 @@
 
 defined( 'ABSPATH' ) || exit;
 
-mytaxi_open();
-while ( have_posts() ) :
-	the_post();
-	$routes = class_exists( '\MyTaxi\Core\Data' ) ? \MyTaxi\Core\Data::home_routes() : array();
-	mytaxi_breadcrumbs();
-	mytaxi_page_hero(
-		__( 'Our services', 'mytaxi-generatepress' ),
-		'varna-airport-transfers',
-		array(
-			array(
-				'label' => __( 'Choose a destination', 'mytaxi-generatepress' ),
-				'url'   => '#routes',
-				'style' => 'yellow',
-			),
-		)
+the_post();
+$groups   = mytaxi_service_groups();
+$all      = array();
+$route_by = array();
+foreach ( $groups['airport'] as $airport ) {
+	$airport_routes = class_exists( '\MyTaxi\Core\Data' ) ? \MyTaxi\Core\Data::routes_for_service( (int) $airport['id'] ) : array();
+	$all            = array_merge( $all, $airport_routes );
+	$route_by[]     = array(
+		'label'  => sprintf( __( 'From %s', 'mytaxi-generatepress' ), mytaxi_place_name( (string) $airport['title'] ) ),
+		'routes' => $airport_routes,
 	);
-	if ( $routes ) :
-		?>
-		<section class="mt-section" id="routes">
-			<div class="mt-section__head">
-				<h2><?php echo esc_html( mytaxi_line( 'routes_heading' ) ); ?></h2>
-				<?php if ( '' !== mytaxi_line( 'routes_text' ) ) : ?>
-					<p><?php echo esc_html( mytaxi_line( 'routes_text' ) ); ?></p>
-				<?php endif; ?>
-			</div>
-			<div class="mt-route-list">
-				<?php foreach ( $routes as $route ) : ?>
-					<?php get_template_part( 'template-parts/route-card', null, array( 'route' => $route, 'variant' => 'row' ) ); ?>
-				<?php endforeach; ?>
-			</div>
-		</section>
-		<?php
-	endif;
-	?>
-	<section class="mt-band mt-band--cta">
-		<div>
-			<h2><?php echo esc_html( mytaxi_line( 'routes_cta_heading' ) ); ?></h2>
-			<p><?php echo esc_html( mytaxi_line( 'routes_cta_text' ) ); ?></p>
-		</div>
-		<a class="mt-btn mt-btn--yellow" href="<?php echo esc_url( home_url( '/contact/' ) ); ?>"><span><?php esc_html_e( 'Contact us', 'mytaxi-generatepress' ); ?></span><?php mytaxi_icon( 'arrow' ); ?></a>
-	</section>
-	<?php
-endwhile;
+}
+$first = $groups['airport'][0] ?? array();
+
+mytaxi_open(
+	'template-parts/home-hero',
+	array(
+		'routes' => $all,
+		'photo'  => mytaxi_hero_photo( 'varna-airport-to-balchik' ),
+		'title'  => get_the_title(),
+		'lede'   => wp_strip_all_tags( get_the_content() ),
+		'crumbs' => true,
+		'local'  => false,
+	)
+);
+
+get_template_part(
+	'template-parts/route-tiles',
+	null,
+	array(
+		'id'      => 'routes',
+		'groups'  => $route_by,
+		'heading' => mytaxi_line( 'routes_heading' ),
+		'text'    => mytaxi_routes_sample( $all ) ? __( 'Sample prices for the car. The team confirms the price with you before the transfer.', 'mytaxi-generatepress' ) : __( 'Prices are for the car, not per person.', 'mytaxi-generatepress' ),
+	)
+);
+
+get_template_part(
+	'template-parts/steps',
+	null,
+	array_merge(
+		mytaxi_transfer_steps(),
+		array(
+			'image_id' => (int) ( $first['image_id'] ?? 0 ),
+			'file'     => 'varna-airport.jpg',
+		)
+	)
+);
+
+get_template_part(
+	'template-parts/travel-needs',
+	null,
+	array(
+		'url'   => '#routes',
+		'label' => __( 'Choose your route', 'mytaxi-generatepress' ),
+	)
+);
+
+mytaxi_cta(
+	mytaxi_line( 'routes_cta_heading' ),
+	mytaxi_line( 'routes_cta_text' ),
+	home_url( '/contact/' ),
+	__( 'Contact us', 'mytaxi-generatepress' )
+);
+
 mytaxi_close();

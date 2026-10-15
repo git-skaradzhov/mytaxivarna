@@ -1,4 +1,5 @@
 (function () {
+  document.documentElement.classList.add('mt-js');
   var toggle = document.querySelector('[data-nav-toggle]');
   var nav = document.querySelector('[data-nav]');
   if (toggle && nav) {
@@ -53,6 +54,8 @@
   document.querySelectorAll('.mt-form').forEach(function (form) {
     preparePickers(form);
     prepareChildSeat(form);
+    prepareReturn(form);
+    prepareRouteFlow(form);
     var tokenUrl = form.getAttribute('data-token-url');
     var tokenInput = form.querySelector('[name="mytaxi_token"]');
     var startedInput = form.querySelector('[name="mytaxi_started"]');
@@ -99,6 +102,17 @@
     }
     preparePickers(form);
     prepareChildSeat(form);
+    prepareReturn(form);
+  });
+
+  document.addEventListener('wpcf7mailsent', function (event) {
+    var flow = event.target.closest('[data-route-flow]');
+    if (!flow) {
+      return;
+    }
+    try {
+      window.sessionStorage.removeItem(draftKey(flow));
+    } catch (error) {}
   });
 
   document.addEventListener('wpcf7invalid', function (event) {
@@ -126,6 +140,8 @@
     note.textContent = 'The request was not sent. Correct the fields below.';
     box.replaceChildren(note, list);
   });
+
+  document.querySelectorAll('[data-transfer-search]').forEach(prepareSearch);
 
   document.querySelectorAll('[data-send-location]').forEach(function (button) {
     button.addEventListener('click', function () {
@@ -258,19 +274,248 @@
   }
 
   function prepareChildSeat(form) {
-    var box = form.querySelector('input[name="mytaxi-child-seat[]"]');
     var age = form.querySelector('.mt-child-age');
-    if (!box || !age || box.dataset.ready === '1') {
+    if (!age || age.dataset.ready === '1') {
+      return;
+    }
+    var box = form.querySelector('input[name="mytaxi-child-seat[]"]');
+    var select = form.querySelector('select[name="mytaxi-child-seat"]');
+    if (!box && !select) {
+      return;
+    }
+    age.dataset.ready = '1';
+    var sync = function () {
+      var open = box ? box.checked : select.value === 'Yes';
+      age.hidden = !open;
+      age.classList.toggle('is-open', open);
+      var input = age.querySelector('input, textarea');
+      if (input) {
+        input.required = open;
+      }
+    };
+    sync();
+    if (box) {
+      box.addEventListener('change', sync);
+    }
+    if (select) {
+      select.addEventListener('change', sync);
+    }
+  }
+
+  function prepareReturn(form) {
+    var box = form.querySelector('input[name="mytaxi-return[]"]');
+    var when = form.querySelector('.mt-return-when');
+    if (!box || !when || box.dataset.ready === '1') {
       return;
     }
     box.dataset.ready = '1';
     var sync = function () {
-      var open = box.checked;
-      age.hidden = !open;
-      age.classList.toggle('is-open', open);
+      when.hidden = !box.checked;
+      when.querySelectorAll('input').forEach(function (input) {
+        input.required = box.checked;
+      });
     };
     sync();
     box.addEventListener('change', sync);
+  }
+
+  function prepareSearch(form) {
+    var from = form.querySelector('[data-search-from]');
+    var to = form.querySelector('[data-search-to]');
+    var date = form.querySelector('[data-search-date]');
+    if (!from || !to) {
+      return;
+    }
+    if (date) {
+      var later = new Date();
+      later.setMonth(later.getMonth() + 18);
+      date.min = stamp(new Date());
+      date.max = stamp(later);
+    }
+    var filter = function () {
+      Array.prototype.forEach.call(to.options, function (option) {
+        if (!option.value) {
+          return;
+        }
+        var match = option.getAttribute('data-origin') === from.value;
+        option.hidden = !match;
+        option.disabled = !match;
+      });
+      var chosen = to.options[to.selectedIndex];
+      if (chosen && chosen.disabled) {
+        to.value = '';
+      }
+    };
+    filter();
+    from.addEventListener('change', filter);
+    form.addEventListener('submit', function (event) {
+      event.preventDefault();
+      var option = to.options[to.selectedIndex];
+      if (!option || !option.value) {
+        to.setCustomValidity('Choose your destination.');
+        to.reportValidity();
+        to.focus();
+        return;
+      }
+      to.setCustomValidity('');
+      var data = { step: '1' };
+      var time = form.querySelector('[data-search-time]');
+      var passengers = form.querySelector('[data-search-passengers]');
+      if (date && date.value) {
+        data['mytaxi-date'] = date.value;
+      }
+      if (time && time.value) {
+        data['mytaxi-time'] = time.value;
+      }
+      if (passengers && passengers.value) {
+        data['mytaxi-passengers'] = passengers.value;
+      }
+      try {
+        window.sessionStorage.setItem('mytaxi-draft-' + option.getAttribute('data-route'), JSON.stringify(data));
+      } catch (error) {}
+      window.location.href = option.value;
+    });
+    to.addEventListener('change', function () {
+      to.setCustomValidity('');
+    });
+  }
+
+  function draftKey(flow) {
+    return 'mytaxi-draft-' + (flow.getAttribute('data-route') || 'route');
+  }
+
+  function readDraft(flow) {
+    try {
+      return JSON.parse(window.sessionStorage.getItem(draftKey(flow)) || '{}');
+    } catch (error) {
+      return {};
+    }
+  }
+
+  function writeDraft(flow, form, step) {
+    var data = { step: step || '1' };
+    form.querySelectorAll('input, select, textarea').forEach(function (field) {
+      if (!field.name || field.type === 'hidden' || field.name === 'mytaxi-company') {
+        return;
+      }
+      if (field.type === 'checkbox') {
+        data[field.name] = field.checked ? '1' : '';
+        return;
+      }
+      data[field.name] = field.value;
+    });
+    try {
+      window.sessionStorage.setItem(draftKey(flow), JSON.stringify(data));
+    } catch (error) {}
+  }
+
+  function applyDraft(flow, form) {
+    var data = readDraft(flow);
+    Object.keys(data).forEach(function (name) {
+      if (name === 'step') {
+        return;
+      }
+      var field = form.querySelector('[name="' + name.replace(/"/g, '') + '"]');
+      if (!field) {
+        return;
+      }
+      if (field.type === 'checkbox') {
+        field.checked = data[name] === '1';
+        field.dispatchEvent(new Event('change'));
+        return;
+      }
+      if (!field.value && data[name]) {
+        field.value = data[name];
+        field.dispatchEvent(new Event('change'));
+      }
+    });
+    return data.step === '2';
+  }
+
+  function fillSummary(flow, form) {
+    var origin = valueOf(form, 'mytaxi-origin') || flow.getAttribute('data-origin') || '';
+    var destination = valueOf(form, 'mytaxi-destination') || flow.getAttribute('data-destination') || '';
+    var when = [valueOf(form, 'mytaxi-date'), valueOf(form, 'mytaxi-time')].filter(Boolean).join(' · ');
+    var passengers = valueOf(form, 'mytaxi-passengers');
+    var returning = form.querySelector('input[name="mytaxi-return[]"]');
+    var back = [valueOf(form, 'mytaxi-return-date'), valueOf(form, 'mytaxi-return-time')].filter(Boolean).join(' · ');
+    setSummary(flow, 'route', origin && destination ? origin + ' → ' + destination : origin || destination);
+    setSummary(flow, 'when', when ? when + ' (local time)' : '—');
+    setSummary(flow, 'passengers', passengers || '—');
+    setSummary(flow, 'return', returning && returning.checked ? (back || 'Requested') : 'Not requested');
+    setSummary(flow, 'price', flow.getAttribute('data-price') || '');
+  }
+
+  function valueOf(form, name) {
+    var field = form.querySelector('[name="' + name + '"]');
+    return field ? String(field.value || '').trim() : '';
+  }
+
+  function setSummary(flow, key, text) {
+    var node = flow.querySelector('[data-summary="' + key + '"]');
+    if (node) {
+      node.textContent = text;
+    }
+  }
+
+  function prepareRouteFlow(form) {
+    var flow = form.closest('[data-route-flow]');
+    var button = form.querySelector('.mt-continue');
+    if (!flow || !button || button.dataset.ready === '1') {
+      return;
+    }
+    button.dataset.ready = '1';
+    var reopen = applyDraft(flow, form);
+    fillSummary(flow, form);
+    if (reopen) {
+      document.documentElement.classList.add('is-request');
+    }
+    form.addEventListener('input', function () {
+      writeDraft(flow, form, document.documentElement.classList.contains('is-request') ? '2' : '1');
+      fillSummary(flow, form);
+    });
+    form.addEventListener('change', function () {
+      writeDraft(flow, form, document.documentElement.classList.contains('is-request') ? '2' : '1');
+      fillSummary(flow, form);
+    });
+    button.addEventListener('click', function () {
+      var step = form.querySelector('.mt-step-1');
+      var fields = step ? step.querySelectorAll('input, select, textarea') : [];
+      var firstInvalid = null;
+      fields.forEach(function (field) {
+        if (firstInvalid || field.disabled || field.type === 'hidden' || field.closest('[hidden]')) {
+          return;
+        }
+        if (!field.checkValidity()) {
+          firstInvalid = field;
+        }
+      });
+      if (firstInvalid) {
+        firstInvalid.reportValidity();
+        firstInvalid.focus();
+        return;
+      }
+      fillSummary(flow, form);
+      writeDraft(flow, form, '2');
+      document.documentElement.classList.add('is-request');
+      window.scrollTo(0, 0);
+      var name = form.querySelector('[name="mytaxi-name"]');
+      if (name) {
+        name.focus();
+      }
+    });
+    var edit = flow.querySelector('[data-edit-journey]');
+    if (edit) {
+      edit.addEventListener('click', function () {
+        document.documentElement.classList.remove('is-request');
+        writeDraft(flow, form, '1');
+        window.scrollTo(0, 0);
+        var pickup = form.querySelector('[name="mytaxi-origin"]');
+        if (pickup) {
+          pickup.focus();
+        }
+      });
+    }
   }
 
   function stamp(date) {

@@ -92,6 +92,7 @@ class Setup {
 		self::refresh_editorial();
 		self::apply_design_copy();
 		self::apply_confirmed_details();
+		self::seed_sample_prices();
 		self::flush();
 
 		return $services;
@@ -396,6 +397,42 @@ class Setup {
 			true
 		);
 		return is_wp_error( $id ) ? 0 : (int) $id;
+	}
+
+	/**
+	 * Fill empty route prices with labelled sample fares. A saved price is left alone.
+	 */
+	public static function seed_sample_prices() {
+		if ( '1' === (string) get_option( 'mytaxi_sample_prices_ready', '' ) ) {
+			return;
+		}
+		$route = self::find( 'mytaxi_route', 'varna-airport-to-golden-sands' );
+		if ( ! $route ) {
+			return;
+		}
+		$prices = array(
+			'varna-airport-to-golden-sands' => '45',
+			'varna-airport-to-albena'       => '52',
+			'varna-airport-to-kranevo'      => '40',
+			'varna-airport-to-balchik'      => '58',
+			'sofia-airport-to-sofia'        => '35',
+		);
+		foreach ( $prices as $slug => $amount ) {
+			$post = self::find( 'mytaxi_route', $slug );
+			if ( ! $post ) {
+				continue;
+			}
+			$current = Fields::price( (string) get_post_meta( $post->ID, '_mytaxi_price', true ) );
+			if ( '' !== $current ) {
+				continue;
+			}
+			update_post_meta( $post->ID, '_mytaxi_price', $amount );
+			update_post_meta( $post->ID, '_mytaxi_currency', 'EUR' );
+			update_post_meta( $post->ID, '_mytaxi_price_type', 'fixed' );
+			update_post_meta( $post->ID, '_mytaxi_price_basis', 'per_vehicle' );
+			update_post_meta( $post->ID, '_mytaxi_price_sample', '1' );
+		}
+		update_option( 'mytaxi_sample_prices_ready', '1', false );
 	}
 
 	/**

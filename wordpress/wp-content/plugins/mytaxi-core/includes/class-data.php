@@ -432,6 +432,34 @@ class Data {
 	}
 
 	/**
+	 * Review cards for one service. A row is public only when every value is present.
+	 *
+	 * @param int $service_id Service ID.
+	 * @return array<int,array<string,string>>
+	 */
+	public static function review_sources( $service_id ) {
+		$rows = Fields::decode_list( get_post_meta( (int) $service_id, '_mytaxi_reviews', true ) );
+		$out  = array();
+		foreach ( $rows as $row ) {
+			if ( ! is_array( $row ) ) {
+				continue;
+			}
+			$item = array(
+				'platform' => sanitize_text_field( (string) ( $row['platform'] ?? '' ) ),
+				'url'      => esc_url_raw( (string) ( $row['url'] ?? '' ) ),
+				'rating'   => sanitize_text_field( (string) ( $row['rating'] ?? '' ) ),
+				'count'    => sanitize_text_field( (string) ( $row['count'] ?? '' ) ),
+				'checked'  => sanitize_text_field( (string) ( $row['checked'] ?? '' ) ),
+			);
+			if ( in_array( '', $item, true ) || ! wp_http_validate_url( $item['url'] ) ) {
+				continue;
+			}
+			$out[] = $item;
+		}
+		return $out;
+	}
+
+	/**
 	 * Keep only complete rows.
 	 *
 	 * @param mixed             $stored Stored JSON or array.

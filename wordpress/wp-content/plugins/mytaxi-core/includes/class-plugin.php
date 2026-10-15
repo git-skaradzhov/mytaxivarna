@@ -28,6 +28,7 @@ class Plugin {
 			}
 		);
 
+		add_action( 'init', array( 'MyTaxi\\Core\\Setup', 'seed_sample_prices' ), 20 );
 		PostTypes::boot();
 		Routing::boot();
 		Meta::boot();

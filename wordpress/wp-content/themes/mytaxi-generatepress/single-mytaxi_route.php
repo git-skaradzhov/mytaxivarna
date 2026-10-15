@@ -1,170 +1,125 @@
 <?php
 /**
- * Route page.
+ * Airport route.
  *
  * @package MyTaxi_GeneratePress
  */
 
 defined( 'ABSPATH' ) || exit;
 
-mytaxi_open();
-while ( have_posts() ) :
-	the_post();
-	$route   = class_exists( '\MyTaxi\Core\Data' ) ? \MyTaxi\Core\Data::route( get_the_ID() ) : array();
-	$related = class_exists( '\MyTaxi\Core\Data' ) ? \MyTaxi\Core\Data::related_routes( get_the_ID() ) : array();
-	$service = $route['service'] ?? array();
-	$price   = $route['price'] ?? array( 'text' => '', 'basis_label' => '', 'type' => 'on_request', 'offer' => false );
-	$facts   = array(
-		__( 'Distance', 'mytaxi-generatepress' )     => $route['distance'] ?? '',
-		__( 'Journey time', 'mytaxi-generatepress' ) => $route['duration'] ?? '',
-		__( 'Capacity', 'mytaxi-generatepress' )     => $route['capacity'] ?? '',
-		__( 'Luggage', 'mytaxi-generatepress' )      => $route['luggage'] ?? '',
+the_post();
+$route   = class_exists( '\MyTaxi\Core\Data' ) ? \MyTaxi\Core\Data::route( get_the_ID() ) : array();
+$service = (array) ( $route['service'] ?? array() );
+$related = class_exists( '\MyTaxi\Core\Data' ) ? \MyTaxi\Core\Data::related_routes( get_the_ID() ) : array();
+$reviews = class_exists( '\MyTaxi\Core\Data' ) ? \MyTaxi\Core\Data::review_sources( (int) ( $service['id'] ?? 0 ) ) : array();
+$price   = (array) ( $route['price'] ?? array() );
+$origin  = (string) ( $route['origin'] ?? '' );
+$dest    = (string) ( $route['destination'] ?? '' );
+$sample  = '1' === (string) get_post_meta( get_the_ID(), '_mytaxi_price_sample', true );
+
+mytaxi_open( 'template-parts/route-hero', array( 'route' => $route ) );
+
+get_template_part(
+	'template-parts/strip',
+	null,
+	array(
+		'panel' => true,
+		'items' => array(
+			array(
+				'icon'  => 'users',
+				'value' => (string) ( $route['capacity'] ?? '' ),
+				'label' => '',
+			),
+			array(
+				'icon'  => 'card',
+				'value' => ! empty( $price['offer'] ) ? (string) $price['text'] : '',
+				'label' => __( 'fixed price for the car', 'mytaxi-generatepress' ),
+			),
+			array(
+				'icon'  => 'sign',
+				'value' => __( 'Meet & greet', 'mytaxi-generatepress' ),
+				'label' => __( 'in Arrivals', 'mytaxi-generatepress' ),
+			),
+		),
+	)
+);
+?>
+<div class="mt-route-body" data-panel="journey">
+	<?php
+	get_template_part(
+		'template-parts/photo-cards',
+		null,
+		array(
+			'heading' => __( 'All set before you land', 'mytaxi-generatepress' ),
+			'items'   => mytaxi_airport_cards( $service ),
+		)
 	);
-	$phone = $service['contacts']['phone'] ?? '';
+
+	$amount = ! empty( $price['offer'] ) ? (string) ( $price['text'] ?? '' ) : '';
+	get_template_part(
+		'template-parts/vehicles',
+		null,
+		array(
+			'items' => mytaxi_vehicle_items( $service, $amount ),
+			'note'  => $sample && $amount ? __( 'Sample price for this route. The team confirms the price with you before the transfer.', 'mytaxi-generatepress' ) : '',
+		)
+	);
 	?>
-	<?php mytaxi_breadcrumbs(); ?>
-	<header class="mt-hero">
-		<div class="mt-hero__copy">
-			<p class="mt-kicker"><?php esc_html_e( 'Airport transfer', 'mytaxi-generatepress' ); ?></p>
-			<h1><?php echo esc_html( trim( ( $route['origin'] ?? '' ) . ' → ' . ( $route['destination'] ?? '' ) ) ); ?></h1>
-			<?php mytaxi_text( $route['summary'] ?? '' ); ?>
-			<?php if ( $phone ) : ?>
-				<p class="mt-phone"><a href="<?php echo esc_url( $service['contacts']['phone_href'] ); ?>"><?php mytaxi_icon( 'phone' ); ?><span><?php echo esc_html( mytaxi_phone_text( $phone ) ); ?></span></a></p>
-			<?php endif; ?>
-			<div class="mt-actions">
-				<?php mytaxi_contact_buttons( $service ); ?>
-				<a class="mt-btn mt-btn--ghost" href="#request"><span><?php esc_html_e( 'Request a quote', 'mytaxi-generatepress' ); ?></span><?php mytaxi_icon( 'arrow' ); ?></a>
-			</div>
-		</div>
-		<div class="mt-hero__media">
-			<?php mytaxi_picture( $route['slug'] ?? '', (int) ( $route['image_id'] ?? 0 ), get_the_title(), true ); ?>
-		</div>
-	</header>
-
-	<div class="mt-split">
-		<div class="mt-stack">
-			<section class="mt-panel">
-				<h2><?php esc_html_e( 'Your transfer, step by step', 'mytaxi-generatepress' ); ?></h2>
-				<ol class="mt-steps">
-					<li><span>1</span><div><strong><?php esc_html_e( 'Send your details', 'mytaxi-generatepress' ); ?></strong><p><?php esc_html_e( 'Tell us when and where you need a transfer.', 'mytaxi-generatepress' ); ?></p></div></li>
-					<li><span>2</span><div><strong><?php esc_html_e( 'Receive confirmation', 'mytaxi-generatepress' ); ?></strong><p><?php esc_html_e( 'The request is confirmed after the price is agreed and you give one passenger’s name and the flight number.', 'mytaxi-generatepress' ); ?></p></div></li>
-					<li><span>3</span><div><strong><?php esc_html_e( 'Arrange your pickup', 'mytaxi-generatepress' ); ?></strong><p><?php echo ! empty( $route['meeting'] ) ? esc_html( $route['meeting'] ) : esc_html__( 'The driver meets you in the arrivals hall with a name sign.', 'mytaxi-generatepress' ); ?></p></div></li>
-				</ol>
-			</section>
-
-			<section class="mt-panel">
-				<p class="mt-price"><?php echo esc_html( $price['text'] ); ?></p>
-				<?php if ( ! empty( $price['basis_label'] ) && ! empty( $price['offer'] ) ) : ?>
-					<p><?php echo esc_html( $price['basis_label'] ); ?></p>
-				<?php elseif ( 'from' === ( $price['type'] ?? '' ) ) : ?>
-					<p><?php esc_html_e( 'The amount is a starting price, not a fixed fare.', 'mytaxi-generatepress' ); ?></p>
-				<?php else : ?>
-					<p><?php esc_html_e( 'The fare is agreed as a fixed price for the car before the transfer.', 'mytaxi-generatepress' ); ?></p>
-				<?php endif; ?>
-				<dl class="mt-facts">
-					<div><dt><?php esc_html_e( 'Pickup', 'mytaxi-generatepress' ); ?></dt><dd><?php echo esc_html( $route['origin'] ?? '' ); ?></dd></div>
-					<div><dt><?php esc_html_e( 'Destination', 'mytaxi-generatepress' ); ?></dt><dd><?php echo esc_html( $route['destination'] ?? '' ); ?></dd></div>
-					<?php if ( ! empty( $service['title'] ) ) : ?>
-						<div><dt><?php esc_html_e( 'Service', 'mytaxi-generatepress' ); ?></dt><dd><?php echo esc_html( $service['title'] ); ?></dd></div>
-					<?php endif; ?>
-				</dl>
-			</section>
-
-			<?php if ( ! empty( $service['benefits'] ) ) : ?>
-				<section class="mt-panel">
-					<h2><?php esc_html_e( 'How it works', 'mytaxi-generatepress' ); ?></h2>
-					<ul class="mt-list">
-						<?php foreach ( $service['benefits'] as $benefit ) : ?>
-							<li><?php echo esc_html( $benefit ); ?></li>
-						<?php endforeach; ?>
-					</ul>
-				</section>
-			<?php endif; ?>
-
-			<?php if ( array_filter( $facts ) || ! empty( $route['included'] ) || ! empty( $route['delay'] ) || ! empty( $route['requirements'] ) ) : ?>
-				<section class="mt-panel">
-					<h2><?php esc_html_e( 'Journey details', 'mytaxi-generatepress' ); ?></h2>
-					<dl class="mt-facts">
-						<?php foreach ( $facts as $label => $value ) : ?>
-							<?php if ( '' !== trim( (string) $value ) ) : ?>
-								<div><dt><?php echo esc_html( $label ); ?></dt><dd><?php echo esc_html( $value ); ?></dd></div>
-							<?php endif; ?>
-						<?php endforeach; ?>
-					</dl>
-					<?php if ( ! empty( $route['included'] ) ) : ?>
-						<h3><?php esc_html_e( 'Included', 'mytaxi-generatepress' ); ?></h3>
-						<ul class="mt-list">
-							<?php foreach ( $route['included'] as $item ) : ?>
-								<li><?php echo esc_html( $item ); ?></li>
-							<?php endforeach; ?>
-						</ul>
-					<?php endif; ?>
-					<?php if ( ! empty( $route['delay'] ) ) : ?>
-						<h3><?php esc_html_e( 'Delayed flight', 'mytaxi-generatepress' ); ?></h3>
-						<?php mytaxi_text( $route['delay'] ); ?>
-					<?php endif; ?>
-					<?php if ( ! empty( $route['requirements'] ) ) : ?>
-						<h3><?php esc_html_e( 'Requirements', 'mytaxi-generatepress' ); ?></h3>
-						<?php mytaxi_text( $route['requirements'] ); ?>
-					<?php endif; ?>
-				</section>
-			<?php endif; ?>
-
-			<?php if ( get_the_content() ) : ?>
-				<div class="mt-prose"><?php the_content(); ?></div>
-			<?php endif; ?>
-		</div>
-		<aside class="mt-form-card" id="request">
-			<h2><?php esc_html_e( 'Request your transfer', 'mytaxi-generatepress' ); ?></h2>
-			<?php if ( class_exists( '\MyTaxi\Core\ContactForm' ) && \MyTaxi\Core\ContactForm::can_send() ) : ?>
-				<p><?php esc_html_e( 'This form asks for a quote. It does not confirm the transfer.', 'mytaxi-generatepress' ); ?></p>
-			<?php endif; ?>
-			<?php
-			get_template_part(
-				'template-parts/inquiry-form',
-				null,
+</div>
+<?php
+get_template_part(
+	'template-parts/route-tiles',
+	null,
+	array(
+		'routes'     => $related,
+		'panel'      => true,
+		'heading'    => __( 'Other travellers also booked', 'mytaxi-generatepress' ),
+		'text'       => sprintf( __( 'From %s', 'mytaxi-generatepress' ), $origin ),
+		'more_url'   => home_url( '/routes/' ),
+		'more_label' => __( 'View all routes', 'mytaxi-generatepress' ),
+	)
+);
+?>
+<div class="mt-route-body" data-panel="journey">
+	<?php
+	get_template_part(
+		'template-parts/steps',
+		null,
+		array(
+			'image_id' => (int) ( $route['image_id'] ?? 0 ) ?: (int) ( $service['vehicle_id'] ?? 0 ),
+			'heading'  => __( 'Request your transfer in a few steps', 'mytaxi-generatepress' ),
+			'text'     => __( 'Send the request in a few minutes. The team replies to confirm everything with you.', 'mytaxi-generatepress' ),
+			'steps'    => array(
 				array(
-					'service_id' => (int) ( $route['service_id'] ?? 0 ),
-					'route_id'   => get_the_ID(),
-				)
-			);
-			?>
-		</aside>
-	</div>
+					'title' => __( 'Enter your journey', 'mytaxi-generatepress' ),
+					'text'  => __( 'Flight arrival, passengers, and a return if you need one.', 'mytaxi-generatepress' ),
+				),
+				array(
+					'title' => __( 'Add your details', 'mytaxi-generatepress' ),
+					'text'  => __( 'Name, phone, and hotel. The flight number can follow before the pickup.', 'mytaxi-generatepress' ),
+				),
+				array(
+					'title' => __( 'We confirm', 'mytaxi-generatepress' ),
+					'text'  => __( 'The team confirms the price, the car, and the pickup with you.', 'mytaxi-generatepress' ),
+				),
+				array(
+					'title' => __( 'Meet your driver', 'mytaxi-generatepress' ),
+					'text'  => __( 'Your driver waits in Arrivals with a name sign.', 'mytaxi-generatepress' ),
+				),
+			),
+		)
+	);
 
-	<?php get_template_part( 'template-parts/transfer-vehicle', null, array( 'service' => $service ) ); ?>
-
-	<?php
-	$vehicle_id = (int) ( $service['image_id'] ?? 0 );
-	if ( empty( $route['image_id'] ) && $vehicle_id ) :
-		?>
-		<section class="mt-section">
-			<div class="mt-section__head">
-				<h2><?php echo esc_html( (string) ( $service['title'] ?? '' ) ); ?></h2>
-			</div>
-			<div class="mt-hero__media">
-				<?php mytaxi_image( $vehicle_id, 'mytaxi-card', (string) ( $service['title'] ?? '' ), false ); ?>
-			</div>
-		</section>
-	<?php endif; ?>
-
-	<?php mytaxi_faqs( $route['faqs'] ?? array() ); ?>
-
-	<?php if ( $related ) : ?>
-		<section class="mt-section">
-			<div class="mt-section__head">
-				<h2><?php esc_html_e( 'Other airport routes', 'mytaxi-generatepress' ); ?></h2>
-				<?php if ( ! empty( $service['url'] ) ) : ?>
-					<a href="<?php echo esc_url( $service['url'] ); ?>"><?php echo esc_html( $service['title'] ); ?></a>
-				<?php endif; ?>
-			</div>
-			<div class="mt-route-list">
-				<?php foreach ( $related as $item ) : ?>
-					<?php get_template_part( 'template-parts/route-card', null, array( 'route' => $item, 'variant' => 'row' ) ); ?>
-				<?php endforeach; ?>
-			</div>
-		</section>
-	<?php endif; ?>
-	<?php
-endwhile;
+	get_template_part( 'template-parts/travel-needs' );
+	get_template_part( 'template-parts/review-sources', null, array( 'reviews' => $reviews ) );
+	mytaxi_faqs( $route['faqs'] ?? array() );
+	mytaxi_cta(
+		sprintf( __( 'Arrange your %s transfer', 'mytaxi-generatepress' ), $dest ),
+		sprintf( __( 'Send a request to the %s team, or message them on WhatsApp.', 'mytaxi-generatepress' ), (string) ( $service['title'] ?? '' ) ),
+		'#request',
+		__( 'Request your transfer', 'mytaxi-generatepress' )
+	);
+	?>
+</div>
+<?php
 mytaxi_close();

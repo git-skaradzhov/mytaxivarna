@@ -7,31 +7,53 @@
 
 defined( 'ABSPATH' ) || exit;
 
-mytaxi_open();
-while ( have_posts() ) :
-	the_post();
-	$groups = mytaxi_service_groups();
-	mytaxi_breadcrumbs();
+the_post();
+$groups = mytaxi_service_groups();
+
+mytaxi_open(
+	'template-parts/page-hero',
+	array(
+		'title'   => get_the_title(),
+		'lede'    => wp_strip_all_tags( get_the_content() ),
+		'photo'   => mytaxi_hero_photo( 'home' ),
+		'compact' => true,
+	)
+);
+
+$sections = array(
+	array(
+		'id'       => 'airport',
+		'heading'  => __( 'Airport transfers', 'mytaxi-generatepress' ),
+		'text'     => __( 'Each airport has its own team. Use the number of the airport you land at.', 'mytaxi-generatepress' ),
+		'services' => $groups['airport'],
+	),
+	array(
+		'id'       => 'local',
+		'heading'  => __( 'Local taxi', 'mytaxi-generatepress' ),
+		'text'     => __( 'Already at the resort? Call the local team.', 'mytaxi-generatepress' ),
+		'services' => $groups['local'],
+	),
+);
+
+foreach ( $sections as $section ) :
+	if ( ! $section['services'] ) {
+		continue;
+	}
 	?>
-	<header class="mt-hero mt-hero--compact">
-		<div class="mt-hero__copy">
-			<p class="mt-kicker"><?php esc_html_e( 'Contact', 'mytaxi-generatepress' ); ?></p>
-			<h1><?php the_title(); ?></h1>
-			<?php if ( get_the_content() ) : ?>
-				<div class="mt-prose"><?php the_content(); ?></div>
-			<?php endif; ?>
-		</div>
-	</header>
-	<section class="mt-section" id="details">
-		<div class="mt-section__head">
-			<h2><?php echo esc_html( mytaxi_line( 'contact_local_heading' ) ); ?></h2>
+	<section class="mt-st-section" id="<?php echo esc_attr( $section['id'] ); ?>">
+		<div class="mt-st-head">
+			<h2><?php echo esc_html( $section['heading'] ); ?></h2>
+			<p><?php echo esc_html( $section['text'] ); ?></p>
 		</div>
 		<div class="mt-contacts">
-			<?php foreach ( array_merge( $groups['local'], $groups['airport'] ) as $service ) : ?>
+			<?php foreach ( $section['services'] as $service ) : ?>
 				<?php get_template_part( 'template-parts/contact-card', null, array( 'service' => $service ) ); ?>
 			<?php endforeach; ?>
 		</div>
 	</section>
 	<?php
-endwhile;
+endforeach;
+?>
+<div class="mt-st-end"></div>
+<?php
 mytaxi_close();

@@ -107,6 +107,20 @@ class Meta {
 		Fields::input( 'mytaxi_hours', 'Работно време', (string) get_post_meta( $id, '_mytaxi_hours', true ), 'Показва се само ако е записано.' );
 		Fields::input( 'mytaxi_email', 'Имейл за получаване на заявки', $email, 'Не се ползва за изпращане. Формите отиват на общия адрес от Общи настройки.', 'email' );
 		Fields::input( 'mytaxi_gbp_url', 'Google Business URL', (string) get_post_meta( $id, '_mytaxi_gbp_url', true ), 'Поставете само проверен адрес на профила.', 'url' );
+		echo '<p><strong>Отзиви</strong></p>';
+		echo '<p class="description">Картата се показва само когато платформа, адрес, оценка, брой отзиви и дата на проверка са попълнени. Празният списък не се публикува.</p>';
+		Fields::repeater(
+			'mytaxi_reviews',
+			Fields::decode_list( get_post_meta( $id, '_mytaxi_reviews', true ) ),
+			array(
+				'platform' => 'Платформа',
+				'url'      => 'Адрес на профила',
+				'rating'   => 'Оценка',
+				'count'    => 'Брой отзиви',
+				'checked'  => 'Проверено на',
+			),
+			'Добави източник'
+		);
 		Fields::end_section();
 
 		Fields::section( 'Снимки', 'Основната снимка се задава в блока „Основна снимка“. Галерията е допълнителна.' );
@@ -182,6 +196,7 @@ class Meta {
 				'per_passenger'  => 'За пътник',
 			)
 		);
+		Fields::checkbox( 'mytaxi_price_sample', 'Примерна цена', '1' === (string) get_post_meta( $id, '_mytaxi_price_sample', true ), 'С отметка сайтът пише, че цената е примерна, и не я подава към Google. Махнете я, когато цената е потвърдена.' );
 		Fields::end_section();
 
 		Fields::section( 'Пътуване', 'Показват се само попълнените редове.' );
@@ -241,6 +256,7 @@ class Meta {
 		update_post_meta( $post_id, '_mytaxi_hours', sanitize_text_field( wp_unslash( $_POST['mytaxi_hours'] ?? '' ) ) );
 		update_post_meta( $post_id, '_mytaxi_email', Fields::email( wp_unslash( $_POST['mytaxi_email'] ?? '' ) ) );
 		update_post_meta( $post_id, '_mytaxi_gbp_url', Fields::url( wp_unslash( $_POST['mytaxi_gbp_url'] ?? '' ) ) );
+		update_post_meta( $post_id, '_mytaxi_reviews', Fields::encode_list( self::reviews_from_post() ) );
 		update_post_meta( $post_id, '_mytaxi_gallery', Fields::encode_list( self::gallery_ids( wp_unslash( $_POST['mytaxi_gallery'] ?? '' ) ) ) );
 		update_post_meta( $post_id, '_mytaxi_terms', sanitize_textarea_field( wp_unslash( $_POST['mytaxi_terms'] ?? '' ) ) );
 		update_post_meta( $post_id, '_mytaxi_benefits', Fields::encode_list( Fields::line_list( wp_unslash( $_POST['mytaxi_benefits'] ?? '' ) ) ) );
@@ -273,28 +289,17 @@ class Meta {
 			$service_id = (int) get_post_meta( $post_id, '_mytaxi_service_id', true );
 		}
 
-		$type = isset( $_POST['mytaxi_price_type'] ) ? sanitize_text_field( wp_unslash( $_POST['mytaxi_price_type'] ) ) : 'on_request';
-		if ( ! in_array( $type, array( 'fixed', 'from', 'on_request' ), true ) ) {
-			$type = 'on_request';
-		}
-		$basis = isset( $_POST['mytaxi_price_basis'] ) ? sanitize_text_field( wp_unslash( $_POST['mytaxi_price_basis'] ) ) : '';
-		if ( ! in_array( $basis, array( '', 'per_vehicle', 'per_passenger' ), true ) ) {
-			$basis = '';
-		}
-
-		$amount = Fields::price( wp_unslash( $_POST['mytaxi_price'] ?? '' ) );
-		if ( '' === $amount ) {
-			$type = 'on_request';
-		}
-
 		update_post_meta( $post_id, '_mytaxi_service_id', (string) $service_id );
 		update_post_meta( $post_id, '_mytaxi_origin', sanitize_text_field( wp_unslash( $_POST['mytaxi_origin'] ?? '' ) ) );
 		update_post_meta( $post_id, '_mytaxi_destination', sanitize_text_field( wp_unslash( $_POST['mytaxi_destination'] ?? '' ) ) );
 		update_post_meta( $post_id, '_mytaxi_summary', sanitize_textarea_field( wp_unslash( $_POST['mytaxi_summary'] ?? '' ) ) );
-		update_post_meta( $post_id, '_mytaxi_price', $amount );
-		update_post_meta( $post_id, '_mytaxi_currency', 'EUR' );
-		update_post_meta( $post_id, '_mytaxi_price_type', $type );
-		update_post_meta( $post_id, '_mytaxi_price_basis', $basis );
+		self::store_price(
+			$post_id,
+			wp_unslash( $_POST['mytaxi_price'] ?? '' ),
+			wp_unslash( $_POST['mytaxi_price_type'] ?? 'on_request' ),
+			wp_unslash( $_POST['mytaxi_price_basis'] ?? '' ),
+			isset( $_POST['mytaxi_price_sample'] )
+		);
 		update_post_meta( $post_id, '_mytaxi_distance', sanitize_text_field( wp_unslash( $_POST['mytaxi_distance'] ?? '' ) ) );
 		update_post_meta( $post_id, '_mytaxi_duration', sanitize_text_field( wp_unslash( $_POST['mytaxi_duration'] ?? '' ) ) );
 		update_post_meta( $post_id, '_mytaxi_capacity', sanitize_text_field( wp_unslash( $_POST['mytaxi_capacity'] ?? '' ) ) );
@@ -315,6 +320,35 @@ class Meta {
 	}
 
 	/**
+	 * Validate and store the price of one route. An empty amount always becomes "on request" and never a sample.
+	 *
+	 * @param int    $post_id Route ID.
+	 * @param mixed  $raw     Amount as typed.
+	 * @param mixed  $type    fixed, from, or on_request.
+	 * @param mixed  $basis   per_vehicle, per_passenger, or empty.
+	 * @param bool   $sample  Price is a sample, not confirmed.
+	 */
+	public static function store_price( $post_id, $raw, $type, $basis, $sample ) {
+		$type  = sanitize_text_field( (string) $type );
+		$basis = sanitize_text_field( (string) $basis );
+		if ( ! in_array( $type, array( 'fixed', 'from', 'on_request' ), true ) ) {
+			$type = 'on_request';
+		}
+		if ( ! in_array( $basis, array( '', 'per_vehicle', 'per_passenger' ), true ) ) {
+			$basis = '';
+		}
+		$amount = Fields::price( (string) $raw );
+		if ( '' === $amount ) {
+			$type = 'on_request';
+		}
+		update_post_meta( $post_id, '_mytaxi_price', $amount );
+		update_post_meta( $post_id, '_mytaxi_currency', 'EUR' );
+		update_post_meta( $post_id, '_mytaxi_price_type', $type );
+		update_post_meta( $post_id, '_mytaxi_price_basis', $basis );
+		update_post_meta( $post_id, '_mytaxi_price_sample', '' !== $amount && $sample ? '1' : '0' );
+	}
+
+	/**
 	 * Shared authorization for meta saves.
 	 *
 	 * @param int    $post_id Post ID.
@@ -330,6 +364,16 @@ class Meta {
 			return false;
 		}
 		return current_user_can( 'edit_post', $post_id );
+	}
+
+	/**
+	 * FAQ rows from the request.
+	 *
+	 * @return array<int,array<string,string>>
+	 */
+	private static function reviews_from_post() {
+		$rows = isset( $_POST['mytaxi_reviews'] ) ? wp_unslash( $_POST['mytaxi_reviews'] ) : array();
+		return Fields::clean_repeater( $rows, array( 'platform', 'url', 'rating', 'count', 'checked' ) );
 	}
 
 	/**

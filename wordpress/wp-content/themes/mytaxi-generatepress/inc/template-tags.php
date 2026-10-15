@@ -9,14 +9,21 @@ defined( 'ABSPATH' ) || exit;
 
 /**
  * Open the GeneratePress content wrappers.
+ *
+ * @param string              $hero Full-width template part printed before the page container.
+ * @param array<string,mixed> $args Arguments for that template part.
  */
-function mytaxi_open() {
+function mytaxi_open( $hero = '', array $args = array() ) {
 	get_header();
 	echo '<div ';
 	generate_do_attr( 'content' );
 	echo '><main ';
 	generate_do_attr( 'main' );
-	echo '><div class="mt-wrap">';
+	echo '>';
+	if ( '' !== $hero ) {
+		get_template_part( $hero, null, $args );
+	}
+	echo '<div class="mt-wrap">';
 }
 
 /**
@@ -64,43 +71,6 @@ function mytaxi_service_groups() {
 		$groups[ $key ][] = $service;
 	}
 	return $groups;
-}
-
-/**
- * Inner-page hero in the same composition as a service page.
- *
- * @param string                                    $kicker Short label above the title.
- * @param string                                    $photo  Theme photo key.
- * @param array<int,array{label:string,url:string,style?:string,icon?:string}> $actions Buttons.
- */
-function mytaxi_page_hero( $kicker, $photo, array $actions = array() ) {
-	echo '<header class="mt-hero">';
-	echo '<div class="mt-hero__copy">';
-	echo '<p class="mt-kicker">' . esc_html( $kicker ) . '</p>';
-	echo '<h1>' . esc_html( get_the_title() ) . '</h1>';
-	if ( get_the_content() ) {
-		echo '<div class="mt-prose">';
-		the_content();
-		echo '</div>';
-	}
-	if ( $actions ) {
-		echo '<div class="mt-actions">';
-		foreach ( $actions as $action ) {
-			$style = $action['style'] ?? 'ghost';
-			echo '<a class="mt-btn mt-btn--' . esc_attr( $style ) . '" href="' . esc_url( $action['url'] ) . '">';
-			if ( ! empty( $action['icon'] ) ) {
-				mytaxi_icon( $action['icon'] );
-			}
-			echo '<span>' . esc_html( $action['label'] ) . '</span>';
-			mytaxi_icon( 'arrow' );
-			echo '</a>';
-		}
-		echo '</div>';
-	}
-	echo '</div>';
-	echo '<div class="mt-hero__media">';
-	mytaxi_picture( $photo, (int) get_post_thumbnail_id(), get_the_title(), true );
-	echo '</div></header>';
 }
 
 /**
@@ -185,26 +155,7 @@ function mytaxi_theme_photos() {
  * @return array<int,array{label:string,author:string,license:string,url:string}>
  */
 function mytaxi_photo_credits() {
-	return array(
-		array(
-			'label'   => 'Kranevo',
-			'author'  => 'Dziadzik',
-			'license' => 'CC BY-SA 3.0',
-			'url'     => 'https://commons.wikimedia.org/wiki/File:Plazawkraniewo.JPG',
-		),
-		array(
-			'label'   => 'Balchik',
-			'author'  => 'Ali Burçin Titizel',
-			'license' => 'CC BY 2.0',
-			'url'     => 'https://commons.wikimedia.org/wiki/File:Balchik_coast,_Bulgaria.jpg',
-		),
-		array(
-			'label'   => 'Sofia Airport',
-			'author'  => 'Oleg Yunakov',
-			'license' => 'CC BY-SA 4.0',
-			'url'     => 'https://commons.wikimedia.org/wiki/File:Sofia_Airport_(SOF)_in_Bulgaria.jpg',
-		),
-	);
+	return array();
 }
 
 /**
@@ -230,10 +181,274 @@ function mytaxi_picture( $slug, $attachment_id, $fallback_alt, $eager = false ) 
 	if ( ! file_exists( $path ) ) {
 		return;
 	}
+	mytaxi_theme_img( $photo['file'], $photo['alt'], $eager );
+}
+
+/**
+ * URL for a route or service photo. Media Library wins over the theme file.
+ *
+ * @param string $slug Record slug.
+ * @param int    $attachment_id Featured image.
+ * @return string
+ */
+function mytaxi_photo_url( $slug, $attachment_id ) {
+	$attachment_id = (int) $attachment_id;
+	if ( $attachment_id ) {
+		$url = wp_get_attachment_image_url( $attachment_id, 'full' );
+		if ( $url ) {
+			return $url;
+		}
+	}
+	$photos = mytaxi_theme_photos();
+	$photo  = $photos[ $slug ] ?? null;
+	if ( ! $photo ) {
+		return '';
+	}
+	$path = get_stylesheet_directory() . '/assets/images/' . $photo['file'];
+	if ( ! is_file( $path ) ) {
+		return '';
+	}
+	return get_stylesheet_directory_uri() . '/assets/images/' . $photo['file'];
+}
+
+/**
+ * Wide landscape behind a photo hero. Client photos are close-ups of the cars, so the hero uses scenery.
+ *
+ * @param string $slug Route slug or the home key.
+ * @return string
+ */
+function mytaxi_hero_photo( $slug ) {
+	$files = array(
+		'home'                          => 'home.jpg',
+		'varna-airport-to-golden-sands' => 'golden-sands.jpg',
+		'varna-airport-to-albena'       => 'albena.jpg',
+		'varna-airport-to-kranevo'      => 'kranevo.jpg',
+		'varna-airport-to-balchik'      => 'balchik.jpg',
+		'sofia-airport-to-sofia'        => 'sofia.jpg',
+	);
+	$file = $files[ (string) $slug ] ?? 'home.jpg';
+	if ( ! is_file( get_stylesheet_directory() . '/assets/images/hero/' . $file ) ) {
+		return '';
+	}
+	return get_stylesheet_directory_uri() . '/assets/images/hero/' . $file;
+}
+
+/**
+ * Wide landscape for a service or listing page.
+ *
+ * @param string $slug Service slug or page key.
+ * @return string
+ */
+function mytaxi_page_photo( $slug ) {
+	$map = array(
+		'taxi-golden-sands'       => 'varna-airport-to-golden-sands',
+		'taxi-albena'             => 'varna-airport-to-albena',
+		'taxi-kranevo'            => 'varna-airport-to-kranevo',
+		'sofia-airport-transfers' => 'sofia-airport-to-sofia',
+		'local-taxi'              => 'varna-airport-to-albena',
+	);
+	return mytaxi_hero_photo( $map[ (string) $slug ] ?? 'home' );
+}
+
+/**
+ * Euro amount without trailing zero cents.
+ *
+ * @param float $amount Amount.
+ * @return string
+ */
+function mytaxi_money( $amount ) {
+	$amount = (float) $amount;
+	return '€' . ( floor( $amount ) === $amount ? (string) (int) $amount : number_format( $amount, 2, '.', '' ) );
+}
+
+/**
+ * Lowest published route price, as "From €X". Empty when no route has a price.
+ *
+ * @param array<int,array<string,mixed>> $routes Routes.
+ * @return string
+ */
+function mytaxi_routes_from( array $routes ) {
+	$amounts = array();
+	foreach ( $routes as $route ) {
+		$price = (array) ( $route['price'] ?? array() );
+		if ( ! empty( $price['offer'] ) && null !== ( $price['amount'] ?? null ) ) {
+			$amounts[] = (float) $price['amount'];
+		}
+	}
+	if ( ! $amounts ) {
+		return '';
+	}
+	return sprintf( __( 'From %s', 'mytaxi-generatepress' ), mytaxi_money( min( $amounts ) ) );
+}
+
+/**
+ * Whether any of these routes shows a sample price.
+ *
+ * @param array<int,array<string,mixed>> $routes Routes.
+ * @return bool
+ */
+function mytaxi_routes_sample( array $routes ) {
+	foreach ( $routes as $route ) {
+		if ( '1' === (string) get_post_meta( (int) ( $route['id'] ?? 0 ), '_mytaxi_price_sample', true ) ) {
+			return true;
+		}
+	}
+	return false;
+}
+
+/**
+ * Vehicle cards of one airport service.
+ *
+ * @param array<string,mixed> $service Airport service.
+ * @param string              $price   Price text shown on each card.
+ * @param bool                $place   Add the airport name to the card text.
+ * @return array<int,array<string,mixed>>
+ */
+function mytaxi_vehicle_items( array $service, $price, $place = false ) {
+	$seats = array(
+		'vehicle_4_id' => __( 'up to 4 passengers', 'mytaxi-generatepress' ),
+		'vehicle_id'   => __( 'up to 5 passengers', 'mytaxi-generatepress' ),
+	);
+	$items = array();
+	foreach ( $seats as $key => $label ) {
+		if ( empty( $service[ $key ] ) ) {
+			continue;
+		}
+		$items[] = array(
+			'id'    => (int) $service[ $key ],
+			'title' => __( 'Private transfer', 'mytaxi-generatepress' ),
+			'price' => (string) $price,
+			'text'  => $place
+				? mytaxi_place_name( (string) ( $service['title'] ?? '' ) ) . ' · ' . $label
+				: sprintf( __( 'Dedicated car, %s', 'mytaxi-generatepress' ), $label ),
+		);
+	}
+	return $items;
+}
+
+/**
+ * Steps of an airport transfer request.
+ *
+ * @return array<string,mixed> Arguments for the steps template part.
+ */
+function mytaxi_transfer_steps() {
+	return array(
+		'heading' => __( 'Request your transfer in a few steps', 'mytaxi-generatepress' ),
+		'text'    => __( 'Arrange the transfer before you fly. The team replies to confirm everything with you.', 'mytaxi-generatepress' ),
+		'steps'   => array(
+			array(
+				'title' => __( 'Choose your route', 'mytaxi-generatepress' ),
+				'text'  => __( 'Pick the airport and your destination.', 'mytaxi-generatepress' ),
+			),
+			array(
+				'title' => __( 'Send your request', 'mytaxi-generatepress' ),
+				'text'  => __( 'Flight arrival, passengers, and your hotel.', 'mytaxi-generatepress' ),
+			),
+			array(
+				'title' => __( 'We confirm', 'mytaxi-generatepress' ),
+				'text'  => __( 'The team confirms the price, the car, and the pickup with you.', 'mytaxi-generatepress' ),
+			),
+			array(
+				'title' => __( 'Meet your driver', 'mytaxi-generatepress' ),
+				'text'  => __( 'Your driver waits in Arrivals with a name sign.', 'mytaxi-generatepress' ),
+			),
+		),
+	);
+}
+
+/**
+ * "All set before you land" cards for one airport service. Varna theme photos are not reused for other airports.
+ *
+ * @param array<string,mixed> $service Airport service.
+ * @return array<int,array<string,mixed>>
+ */
+function mytaxi_airport_cards( array $service ) {
+	$varna   = 'varna-airport-transfers' === (string) ( $service['slug'] ?? '' );
+	$gallery = array_values( array_diff( (array) ( $service['gallery'] ?? array() ), array( (int) ( $service['vehicle_id'] ?? 0 ) ) ) );
+	return array(
+		array(
+			'image_id' => (int) ( $service['vehicle_4_id'] ?? 0 ),
+			'file'     => $varna ? 'varna-vehicle.jpg' : '',
+			'icon'     => 'card',
+			'title'    => __( 'One fixed price', 'mytaxi-generatepress' ),
+			'text'     => __( 'The price is for the car, not per person. The return costs the same.', 'mytaxi-generatepress' ),
+		),
+		array(
+			'image_id' => (int) ( $service['image_id'] ?? 0 ),
+			'file'     => $varna ? 'varna-airport.jpg' : '',
+			'icon'     => 'sign',
+			'title'    => __( 'Met in Arrivals', 'mytaxi-generatepress' ),
+			'text'     => __( 'Your driver waits with a name sign. No extra charge if your flight is delayed.', 'mytaxi-generatepress' ),
+		),
+		array(
+			'image_id' => (int) ( $gallery[0] ?? 0 ),
+			'file'     => $varna ? 'varna-interior.jpg' : '',
+			'icon'     => 'seat',
+			'title'    => __( 'Whatever your trip needs', 'mytaxi-generatepress' ),
+			'text'     => __( 'A free child seat when requested with the booking. Pay the driver in cash or by card.', 'mytaxi-generatepress' ),
+		),
+	);
+}
+
+/**
+ * Navy call-to-action band.
+ *
+ * @param string $heading Heading.
+ * @param string $text    Text.
+ * @param string $url     Button URL.
+ * @param string $label   Button label.
+ * @param bool   $panel   Hide in the route request step.
+ */
+function mytaxi_cta( $heading, $text, $url, $label, $panel = false ) {
+	echo '<section class="mt-st-cta"' . ( $panel ? ' data-panel="journey"' : '' ) . '><div>';
+	echo '<h2>' . esc_html( $heading ) . '</h2>';
+	if ( '' !== $text ) {
+		echo '<p>' . esc_html( $text ) . '</p>';
+	}
+	echo '</div><a class="mt-btn mt-btn--yellow" href="' . esc_url( $url ) . '">' . esc_html( $label ) . '</a></section>';
+}
+
+/**
+ * Review-source cards of several services, one card per profile URL.
+ *
+ * @param array<int,array<string,mixed>> $services Services.
+ * @return array<int,array<string,string>>
+ */
+function mytaxi_review_sources( array $services ) {
+	if ( ! class_exists( '\MyTaxi\Core\Data' ) ) {
+		return array();
+	}
+	$out = array();
+	foreach ( $services as $service ) {
+		foreach ( \MyTaxi\Core\Data::review_sources( (int) ( $service['id'] ?? 0 ) ) as $review ) {
+			$out[ $review['url'] ] = $review;
+		}
+	}
+	return array_values( $out );
+}
+
+/**
+ * Theme image used when a record has no Media Library photo.
+ *
+ * @param string $file File name inside assets/images.
+ * @param string $alt Alt text.
+ * @param bool   $eager Load immediately.
+ */
+function mytaxi_theme_img( $file, $alt, $eager = false ) {
+	$file = ltrim( (string) $file, '/' );
+	$path = get_stylesheet_directory() . '/assets/images/' . $file;
+	if ( ! is_file( $path ) ) {
+		return;
+	}
+	$size = getimagesize( $path );
+	$wide = (int) ( $size[0] ?? 1600 );
+	$high = (int) ( $size[1] ?? 1067 );
 	printf(
-		'<img class="mt-img" src="%1$s" alt="%2$s" width="1600" height="1067" decoding="async"%3$s>',
-		esc_url( get_stylesheet_directory_uri() . '/assets/images/' . $photo['file'] ),
-		esc_attr( $photo['alt'] ),
+		'<img class="mt-img" src="%1$s" alt="%2$s" width="%3$d" height="%4$d" decoding="async"%5$s>',
+		esc_url( get_stylesheet_directory_uri() . '/assets/images/' . $file ),
+		esc_attr( $alt ),
+		$wide,
+		$high,
 		$eager ? ' loading="eager" fetchpriority="high"' : ' loading="lazy"'
 	);
 }
@@ -251,11 +466,40 @@ function mytaxi_icon( $name ) {
 		'pin'      => '<path d="M12 21s6-5.2 6-10a6 6 0 1 0-12 0c0 4.8 6 10 6 10z"/><circle cx="12" cy="11" r="2.1"/>',
 		'chevron'  => '<path d="m9 6 6 6-6 6"/>',
 		'arrow'    => '<path d="M5 12h14"/><path d="m13 6 6 6-6 6"/>',
+		'check'    => '<circle cx="12" cy="12" r="9"/><path d="m8 12.2 2.6 2.6L16 9.4"/>',
+		'clock'    => '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+		'card'     => '<rect x="3" y="5.5" width="18" height="13" rx="2"/><path d="M3 10h18"/><path d="M7 15h4"/>',
+		'sign'     => '<rect x="3.5" y="5" width="17" height="10" rx="1.5"/><path d="M8 9.5h8"/><path d="M12 15v4"/><path d="M8.5 19h7"/>',
+		'seat'     => '<path d="M8 4.5h4a3 3 0 0 1 3 3V13H8z"/><path d="M6 13h11l1.5 4.5H7.5z"/><path d="M9 17.5 8 20.5"/><path d="M16 17.5l1 3"/>',
+		'bag'      => '<rect x="5" y="7.5" width="14" height="12" rx="2"/><path d="M9 7.5V5.5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/><path d="M9 11v5"/><path d="M15 11v5"/>',
+		'note'     => '<path d="M6 3.5h9l3 3v14H6z"/><path d="M9 10h6"/><path d="M9 13.5h6"/><path d="M9 17h4"/>',
+		'users'    => '<circle cx="9" cy="8.5" r="3"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0"/><path d="M15.5 6a3 3 0 0 1 0 5.6"/><path d="M17 14.2A5.5 5.5 0 0 1 20.5 19"/>',
 	);
 	if ( ! isset( $icons[ $name ] ) ) {
 		return;
 	}
 	echo '<svg class="mt-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">' . $icons[ $name ] . '</svg>';
+}
+
+/**
+ * Guarantees under the hero search. Each line is one of the airport services' own benefits.
+ *
+ * @param string $extra Extra class.
+ */
+function mytaxi_trust_row( $extra = '' ) {
+	$items = array(
+		'check' => __( 'Free cancellation', 'mytaxi-generatepress' ),
+		'clock' => __( 'No charge for flight delays', 'mytaxi-generatepress' ),
+		'card'  => __( 'No prepayment', 'mytaxi-generatepress' ),
+		'phone' => __( 'Open 24/7', 'mytaxi-generatepress' ),
+	);
+	echo '<ul class="mt-trust' . ( $extra ? ' ' . esc_attr( $extra ) : '' ) . '">';
+	foreach ( $items as $icon => $label ) {
+		echo '<li>';
+		mytaxi_icon( $icon );
+		echo '<span>' . esc_html( $label ) . '</span></li>';
+	}
+	echo '</ul>';
 }
 
 /**

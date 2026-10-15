@@ -27,6 +27,7 @@ class Admin {
 		add_action( 'admin_notices', array( __CLASS__, 'missing_contact_notice' ) );
 		add_action( 'admin_post_mytaxi_save_settings', array( __CLASS__, 'save_settings' ) );
 		add_action( 'admin_post_mytaxi_save_home', array( __CLASS__, 'save_home' ) );
+		add_action( 'admin_post_mytaxi_save_prices', array( __CLASS__, 'save_prices' ) );
 		add_action( 'admin_post_mytaxi_run_setup', array( __CLASS__, 'run_setup' ) );
 		add_action( 'admin_enqueue_scripts', array( __CLASS__, 'assets' ) );
 	}
@@ -38,6 +39,7 @@ class Admin {
 		add_menu_page( 'MyTaxi', 'MyTaxi', 'manage_options', 'mytaxi-settings', array( __CLASS__, 'render_settings' ), 'dashicons-admin-generic', 58 );
 		add_submenu_page( 'mytaxi-settings', 'Общи настройки', 'Общи настройки', 'manage_options', 'mytaxi-settings', array( __CLASS__, 'render_settings' ) );
 		add_submenu_page( 'mytaxi-settings', 'Начална страница', 'Начална страница', 'manage_options', 'mytaxi-home', array( __CLASS__, 'render_home' ) );
+		add_submenu_page( 'mytaxi-settings', 'Цени', 'Цени', 'edit_posts', 'mytaxi-prices', array( __CLASS__, 'render_prices' ) );
 		add_submenu_page( 'mytaxi-settings', 'Първоначална настройка', 'Първоначална настройка', 'manage_options', 'mytaxi-setup', array( __CLASS__, 'render_setup' ) );
 	}
 
@@ -47,7 +49,7 @@ class Admin {
 	 * @param string $hook Hook.
 	 */
 	public static function assets( $hook ) {
-		if ( ! in_array( $hook, array( 'toplevel_page_mytaxi-settings', 'mytaxi_page_mytaxi-home', 'mytaxi_page_mytaxi-setup' ), true ) ) {
+		if ( ! in_array( $hook, array( 'toplevel_page_mytaxi-settings', 'mytaxi_page_mytaxi-home', 'mytaxi_page_mytaxi-setup', 'mytaxi_page_mytaxi-prices' ), true ) ) {
 			return;
 		}
 		wp_enqueue_style( 'mytaxi-admin', MYTAXI_CORE_URL . 'assets/admin.css', array(), MYTAXI_CORE_VERSION );
@@ -140,6 +142,9 @@ class Admin {
 				)
 			);
 			echo esc_html( (string) $price['text'] );
+			if ( '1' === (string) get_post_meta( $post_id, '_mytaxi_price_sample', true ) ) {
+				echo ' <em>(примерна)</em>';
+			}
 		}
 		if ( 'mytaxi_status' === $column ) {
 			echo esc_html( self::status_label( (string) get_post_status( $post_id ) ) );
@@ -343,6 +348,111 @@ class Admin {
 
 		submit_button( 'Запиши началната страница' );
 		echo '</form></div>';
+	}
+
+	/**
+	 * All route prices in one table.
+	 */
+	public static function render_prices() {
+		if ( ! current_user_can( 'edit_posts' ) ) {
+			return;
+		}
+		$routes = get_posts(
+			array(
+				'post_type'      => 'mytaxi_route',
+				'post_status'    => array( 'publish', 'draft', 'pending', 'private' ),
+				'posts_per_page' => 200,
+				'orderby'        => array(
+					'menu_order' => 'ASC',
+					'title'      => 'ASC',
+				),
+				'no_found_rows'  => true,
+			)
+		);
+		$groups = array();
+		foreach ( $routes as $route ) {
+			$service_id = (int) get_post_meta( $route->ID, '_mytaxi_service_id', true );
+			$groups[ $service_id ][] = $route;
+		}
+
+		echo '<div class="wrap mytaxi-admin"><h1>Цени</h1>';
+		if ( isset( $_GET['updated'] ) ) {
+			echo '<div class="notice notice-success"><p>Цените са записани. Сайтът показва новите цени веднага.</p></div>';
+		}
+		echo '<p>Цената е в EUR. Празно поле означава „Price on request“. Отметката „Примерна“ показва бележка, че цената още не е потвърдена, и не подава цената към Google.</p>';
+		if ( ! $routes ) {
+			echo '<p>Няма маршрути.</p></div>';
+			return;
+		}
+		echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
+		echo '<input type="hidden" name="action" value="mytaxi_save_prices">';
+		wp_nonce_field( 'mytaxi_save_prices' );
+		$types  = array(
+			'fixed'      => 'Фиксирана',
+			'from'       => 'От',
+			'on_request' => 'При запитване',
+		);
+		$bases  = array(
+			''              => 'Не е посочена',
+			'per_vehicle'   => 'За автомобил',
+			'per_passenger' => 'За пътник',
+		);
+		foreach ( $groups as $service_id => $items ) {
+			Fields::section( $service_id ? get_the_title( $service_id ) : 'Без услуга' );
+			echo '<table class="widefat striped mytaxi-prices"><thead><tr><th>Маршрут</th><th>Цена (EUR)</th><th>Тип</th><th>Основа</th><th>Примерна</th><th></th></tr></thead><tbody>';
+			foreach ( $items as $route ) {
+				if ( ! current_user_can( 'edit_post', $route->ID ) ) {
+					continue;
+				}
+				$id     = (int) $route->ID;
+				$amount = (string) get_post_meta( $id, '_mytaxi_price', true );
+				$type   = (string) get_post_meta( $id, '_mytaxi_price_type', true ) ?: 'on_request';
+				$basis  = (string) get_post_meta( $id, '_mytaxi_price_basis', true );
+				$sample = '1' === (string) get_post_meta( $id, '_mytaxi_price_sample', true );
+				$label  = trim( get_post_meta( $id, '_mytaxi_origin', true ) . ' → ' . get_post_meta( $id, '_mytaxi_destination', true ), ' →' );
+				echo '<tr>';
+				echo '<td><strong>' . esc_html( $label ? $label : get_the_title( $route ) ) . '</strong>' . ( 'publish' !== $route->post_status ? ' <em>(' . esc_html( self::status_label( $route->post_status ) ) . ')</em>' : '' ) . '</td>';
+				echo '<td><input type="text" inputmode="decimal" class="small-text" name="price[' . esc_attr( (string) $id ) . '][amount]" value="' . esc_attr( is_numeric( $amount ) ? (string) (float) $amount : '' ) . '" aria-label="' . esc_attr( 'Цена: ' . $label ) . '"></td>';
+				echo '<td><select name="price[' . esc_attr( (string) $id ) . '][type]">';
+				foreach ( $types as $value => $text ) {
+					echo '<option value="' . esc_attr( $value ) . '"' . selected( $type, $value, false ) . '>' . esc_html( $text ) . '</option>';
+				}
+				echo '</select></td>';
+				echo '<td><select name="price[' . esc_attr( (string) $id ) . '][basis]">';
+				foreach ( $bases as $value => $text ) {
+					echo '<option value="' . esc_attr( $value ) . '"' . selected( $basis, $value, false ) . '>' . esc_html( $text ) . '</option>';
+				}
+				echo '</select></td>';
+				echo '<td><input type="checkbox" name="price[' . esc_attr( (string) $id ) . '][sample]" value="1"' . checked( $sample, true, false ) . ' aria-label="' . esc_attr( 'Примерна цена: ' . $label ) . '"></td>';
+				echo '<td><a href="' . esc_url( (string) get_edit_post_link( $id ) ) . '">Редактирай маршрута</a></td>';
+				echo '</tr>';
+			}
+			echo '</tbody></table>';
+			Fields::end_section();
+		}
+		submit_button( 'Запиши цените' );
+		echo '</form></div>';
+	}
+
+	/**
+	 * Save the price table.
+	 */
+	public static function save_prices() {
+		if ( ! current_user_can( 'edit_posts' ) ) {
+			wp_die( 'Нямате право за тази промяна.' );
+		}
+		check_admin_referer( 'mytaxi_save_prices' );
+		$rows = isset( $_POST['price'] ) && is_array( $_POST['price'] ) ? wp_unslash( $_POST['price'] ) : array();
+		foreach ( $rows as $post_id => $row ) {
+			$post_id = absint( $post_id );
+			if ( ! $post_id || ! is_array( $row ) || 'mytaxi_route' !== get_post_type( $post_id ) || ! current_user_can( 'edit_post', $post_id ) ) {
+				continue;
+			}
+			Meta::store_price( $post_id, $row['amount'] ?? '', $row['type'] ?? 'on_request', $row['basis'] ?? '', ! empty( $row['sample'] ) );
+			update_post_meta( $post_id, '_mytaxi_client_edited', '1' );
+		}
+		wp_safe_redirect( admin_url( 'admin.php?page=mytaxi-prices&updated=1' ) );
+		exit;
 	}
 
 	/**
