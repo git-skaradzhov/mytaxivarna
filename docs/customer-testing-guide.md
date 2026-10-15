@@ -1,5 +1,39 @@
 # Клиентски преглед и инструкция за ръчно тестване
 
+## Homepage update - 15 October 2026
+
+The homepage now offers five direct service links in two groups: Local taxis
+(Golden Sands, Albena, Kranevo) and Airport transfers (Varna Airport, Sofia Airport).
+Each card opens its service page and shows that service's phone number.
+There are no forms or transfer-search fields on the homepage. Historical
+"Home -> Search" instructions below are superseded: start search from Airport
+transfers, or open a service and then its route form.
+
+The layout follows the supplied reference with existing project imagery, a
+service overview, airport-specific conditions, verified review sources when
+available, FAQs and a contact link. No sample testimonials, ratings or reference
+phone number were copied.
+
+Sources: mytaxivarna.com, taxialbena.com and taxikranevo.com were reviewed for
+local services and contacts. The old Varna transfer domain was inaccessible
+through the web tool; airport conditions and Sofia use confirmed project data
+from client-questions.md and project-scope.md.
+
+Local validation: PHP lint and all 67 existing checks passed. Chrome at 1440x900
+and 390x844 showed five cards, zero forms, no horizontal overflow, broken images
+or JavaScript errors. All five choices fit the desktop first screen; mobile
+requires scrolling to the airport group. No deployment or real mail.
+
+Manual acceptance:
+
+1. Open `/` and check the five services and grouping.
+2. Open every card; compare the service name and phone with its destination.
+3. Confirm the homepage has no airport, date, time or passenger fields.
+4. Open Varna/Sofia and a route; check the enquiry forms there.
+5. Repeat at 390 px; check navigation, cards and FAQ with keyboard and touch.
+
+---
+
 Исторически преглед. Последващите локални поправки на датите/успеха/Privacy
 и demo цените са описани в [актуалния план](requirements-completion-plan.md).
 Те още не са част от описания тук staging release.
