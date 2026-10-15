@@ -234,6 +234,10 @@ class Forms {
 			}
 		}
 
+		if ( $route && Booking::route_errors( $route_id, $old['origin'], $old['destination'] ) ) {
+			return $fail( 'route_mismatch' );
+		}
+
 		$recipient = Fields::email( (string) get_post_meta( $service_id, '_mytaxi_email', true ) );
 		if ( '' === $recipient ) {
 			return $fail( 'no_recipient' );
@@ -484,6 +488,14 @@ class Forms {
 			'',
 			'This message is a request. It is not a confirmed booking.',
 		);
+
+		if ( $route ) {
+			$data  = Data::route( $route->ID );
+			$quote = Booking::quote( $data['price'], false );
+			foreach ( $quote['lines'] as $line ) {
+				$lines[] = $line['label'] . ': ' . $line['value'];
+			}
+		}
 
 		$headers = array(
 			'Content-Type: text/plain; charset=UTF-8',

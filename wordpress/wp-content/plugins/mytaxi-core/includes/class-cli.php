@@ -275,6 +275,10 @@ class Cli {
 			remove_filter( 'pre_wp_mail', $capture, 10 );
 			$check( 'public handler sends a transfer today to direct contact', empty( $late['ok'] ) && 'date_today' === $late['code'] );
 			$check( 'public handler limits one car to 5 passengers', empty( $crowd['ok'] ) && 'passengers_many' === $crowd['code'] );
+			add_filter( 'pre_wp_mail', $capture, 10, 2 );
+			$changed = Forms::inspect( self::payload( $varna ? (int) $varna->ID : 0, $route_id, array_merge( self::valid_fields(), array( 'mytaxi_destination' => 'Golden Sands' ) ) ) );
+			remove_filter( 'pre_wp_mail', $capture, 10 );
+			$check( 'legacy handler rejects changed route destination', empty( $changed['ok'] ) && 'route_mismatch' === $changed['code'] );
 			$check( 'rejected requests send no email', 1 === count( $captured ) );
 		} finally {
 			if ( $mail_probe && $varna ) {

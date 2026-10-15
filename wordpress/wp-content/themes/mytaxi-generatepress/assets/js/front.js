@@ -348,6 +348,12 @@
         errors[v.return_date === v.date ? 'return_time' : 'return_date'] = 'return_order';
       }
     }
+    if (v.routeOrigin !== undefined && v.origin !== v.routeOrigin) {
+      errors.origin = 'route_mismatch';
+    }
+    if (v.routeDestination !== undefined && v.destination !== v.routeDestination) {
+      errors.destination = 'route_mismatch';
+    }
     return errors;
   }
 
@@ -442,6 +448,11 @@
         values[pair[0]] = valueOf(form, pair[1]);
       }
     });
+    var flow = form.closest('[data-route-flow]');
+    if (flow) {
+      values.routeOrigin = flow.getAttribute('data-origin');
+      values.routeDestination = flow.getAttribute('data-destination');
+    }
     return values;
   }
 
@@ -513,6 +524,13 @@
 
     var draft = readDraft(flow);
     applyDraft(flow, form, draft);
+    ['origin', 'destination'].forEach(function (key) {
+      var field = form.querySelector('[name="mytaxi-' + key + '"]');
+      if (field) {
+        field.value = flow.getAttribute('data-' + key) || '';
+        field.readOnly = true;
+      }
+    });
     fillSummary(flow, form);
     var errors = journeyErrors(routeJourney(form));
     if (draft.step === '2' && !hasErrors(errors)) {
@@ -590,7 +608,7 @@
 
   function applyDraft(flow, form, data) {
     Object.keys(data).forEach(function (name) {
-      if (name === 'step') {
+      if (name === 'step' || name === 'mytaxi-origin' || name === 'mytaxi-destination') {
         return;
       }
       var field = form.querySelector('[name="' + name.replace(/"/g, '') + '"]');
@@ -630,8 +648,8 @@
   }
 
   function fillSummary(flow, form) {
-    var origin = valueOf(form, 'mytaxi-origin') || flow.getAttribute('data-origin') || '';
-    var destination = valueOf(form, 'mytaxi-destination') || flow.getAttribute('data-destination') || '';
+    var origin = flow.getAttribute('data-origin') || '';
+    var destination = flow.getAttribute('data-destination') || '';
     var when = moment(valueOf(form, 'mytaxi-date'), valueOf(form, 'mytaxi-time'));
     var passengers = valueOf(form, 'mytaxi-passengers');
     var box = form.querySelector('input[name="mytaxi-return[]"]');

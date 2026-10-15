@@ -27,12 +27,34 @@ class Booking {
 	const MAX_MONTHS = 18;
 
 	/**
+	 * A route price applies only to its published endpoints, in both handlers.
+	 * Service forms without a route keep their free-text journey.
+	 *
+	 * @return array<string,string> Field keys mapped to message codes.
+	 */
+	public static function route_errors( $route_id, $origin, $destination ) {
+		$post = get_post( (int) $route_id );
+		if ( ! $post || 'mytaxi_route' !== $post->post_type || 'publish' !== $post->post_status ) {
+			return array( 'origin' => 'route_mismatch', 'destination' => 'route_mismatch' );
+		}
+		$route  = Data::route( $post->ID );
+		$errors = array();
+		foreach ( array( 'origin' => $origin, 'destination' => $destination ) as $key => $value ) {
+			if ( ! is_string( $value ) || '' === (string) ( $route[ $key ] ?? '' ) || $value !== $route[ $key ] ) {
+				$errors[ $key ] = 'route_mismatch';
+			}
+		}
+		return $errors;
+	}
+
+	/**
 	 * Visitor-facing messages. The browser receives the same text.
 	 *
 	 * @return array<string,string>
 	 */
 	public static function messages() {
 		return array(
+			'route_mismatch'       => __( 'This journey does not match this route. Choose another route to change the pickup or destination.', 'mytaxi-core' ),
 			'date_required'        => __( 'Choose the arrival date.', 'mytaxi-core' ),
 			'date_invalid'         => __( 'Enter the date as YYYY-MM-DD.', 'mytaxi-core' ),
 			'date_today'           => __( 'For transfers today, please contact us on WhatsApp or call.', 'mytaxi-core' ),

@@ -14,7 +14,7 @@ defined( 'ABSPATH' ) || exit;
  */
 class ContactForm {
 
-	const REVISION = '14';
+	const REVISION = '15';
 
 	/**
 	 * Context of the submission currently being mailed.
@@ -223,11 +223,13 @@ class ContactForm {
 	public static function mail_tags( $output, $name, $html ) {
 		unset( $html );
 		$map = array(
-			'_mytaxi_service' => 'service',
-			'_mytaxi_route'   => 'route',
-			'_mytaxi_page'    => 'page',
-			'_mytaxi_subject' => 'subject',
-			'_mytaxi_price'   => 'price',
+			'_mytaxi_service'     => 'service',
+			'_mytaxi_route'       => 'route',
+			'_mytaxi_page'        => 'page',
+			'_mytaxi_subject'     => 'subject',
+			'_mytaxi_price'       => 'price',
+			'_mytaxi_origin'      => 'origin',
+			'_mytaxi_destination' => 'destination',
 		);
 		if ( ! isset( $map[ $name ] ) ) {
 			return $output;
@@ -348,6 +350,9 @@ class ContactForm {
 				$pattern,
 				static function ( $matches ) use ( $safe ) {
 					$tag = $matches[0];
+					if ( is_singular( 'mytaxi_route' ) ) {
+						$tag = substr( $tag, 0, -1 ) . ' readonly>';
+					}
 					if ( preg_match( '/\bvalue="/', $tag ) ) {
 						return preg_replace_callback(
 							'/\bvalue="[^"]*"/',
@@ -444,7 +449,7 @@ class ContactForm {
 			return $result;
 		}
 		$names  = self::journey_fields();
-		$errors = Booking::journey_errors( self::posted_journey() );
+		$errors = array_merge( Booking::journey_errors( self::posted_journey() ), self::route_errors() );
 		foreach ( (array) $tags as $tag ) {
 			$name = is_object( $tag ) ? (string) $tag->name : '';
 			$key  = array_search( $name, $names, true );
@@ -453,6 +458,18 @@ class ContactForm {
 			}
 		}
 		return $result;
+	}
+
+	/**
+	 * Resolve the submitted CF7 page, never a browser-provided price or route name.
+	 */
+	private static function route_errors() {
+		$submission = \WPCF7_Submission::get_instance();
+		$page_id    = $submission ? (int) $submission->get_meta( 'container_post_id' ) : 0;
+		if ( 'mytaxi_route' !== get_post_type( $page_id ) ) {
+			return array();
+		}
+		return Booking::route_errors( $page_id, self::posted_scalar( 'mytaxi-origin' ), self::posted_scalar( 'mytaxi-destination' ) );
 	}
 
 	/**
@@ -711,8 +728,8 @@ class ContactForm {
 			'Name: [mytaxi-name]',
 			'Phone: [mytaxi-phone]',
 			'Email: [mytaxi-email]',
-			'From: [mytaxi-origin]',
-			'To: [mytaxi-destination]',
+			'From: [_mytaxi_origin]',
+			'To: [_mytaxi_destination]',
 			'Date: [mytaxi-date]',
 			'Time (Europe/Sofia): [mytaxi-time]',
 		);
@@ -829,6 +846,8 @@ class ContactForm {
 				'page'    => (string) get_permalink( $post ),
 				'subject' => get_the_title( $post ),
 				'price'   => __( 'Confirmed with the route', 'mytaxi-core' ),
+				'origin'  => self::posted_scalar( 'mytaxi-origin' ),
+				'destination' => self::posted_scalar( 'mytaxi-destination' ),
 			);
 		}
 
@@ -842,6 +861,9 @@ class ContactForm {
 			return array();
 		}
 
+		if ( Booking::route_errors( $post->ID, self::posted_scalar( 'mytaxi-origin' ), self::posted_scalar( 'mytaxi-destination' ) ) ) {
+			return array();
+		}
 		$route = Data::route( $post->ID );
 		$quote = Booking::quote( (array) ( $route['price'] ?? array() ), self::return_requested() );
 		$price = array();
@@ -857,6 +879,8 @@ class ContactForm {
 			'page'    => (string) get_permalink( $post ),
 			'subject' => get_the_title( $post ),
 			'price'   => implode( '; ', $price ),
+			'origin'  => (string) $route['origin'],
+			'destination' => (string) $route['destination'],
 		);
 	}
 

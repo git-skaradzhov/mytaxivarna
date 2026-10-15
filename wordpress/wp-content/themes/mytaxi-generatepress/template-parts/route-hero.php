@@ -58,6 +58,7 @@ $lede     = $fixed
 					)
 				);
 				?>
+				<p data-panel="journey"><a href="<?php echo esc_url( home_url( '/routes/' ) ); ?>"><?php esc_html_e( 'Choose another route', 'mytaxi-generatepress' ); ?></a></p>
 				<?php mytaxi_direct_line( $service, __( 'Transfer today, or more than 5 passengers?', 'mytaxi-generatepress' ), 'journey' ); ?>
 			</div>
 			<aside class="mt-summary" data-panel="request" aria-label="<?php esc_attr_e( 'Your journey', 'mytaxi-generatepress' ); ?>">
