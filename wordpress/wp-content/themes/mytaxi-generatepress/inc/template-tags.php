@@ -272,18 +272,16 @@ function mytaxi_money( $amount ) {
  */
 function mytaxi_routes_from( array $routes ) {
 	$amounts = array();
-	$demo = false;
 	foreach ( $routes as $route ) {
 		$price = (array) ( $route['price'] ?? array() );
 		if ( ! empty( $price['offer'] ) && null !== ( $price['amount'] ?? null ) ) {
 			$amounts[] = (float) $price['amount'];
-			$demo = $demo || ! empty( $price['demo'] );
 		}
 	}
 	if ( ! $amounts ) {
 		return '';
 	}
-	return sprintf( __( 'From %s', 'mytaxi-generatepress' ), mytaxi_money( min( $amounts ) ) ) . ( $demo ? ' (demo)' : '' );
+	return sprintf( __( 'From %s', 'mytaxi-generatepress' ), mytaxi_money( min( $amounts ) ) );
 }
 
 /**

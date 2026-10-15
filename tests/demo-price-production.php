@@ -14,6 +14,6 @@ namespace MyTaxi\Core {
 	if ( null !== $price['amount'] || $price['offer'] || 'Price on request' !== $price['text'] ) { throw new \RuntimeException( 'Production exposed a demonstration fare' ); }
 	$GLOBALS['environment'] = 'staging';
 	$price = Price::present( $meta );
-	if ( 45.0 !== $price['amount'] || ! str_contains( $price['text'], '(demo)' ) ) { throw new \RuntimeException( 'Staging demonstration was not labelled' ); }
-	echo "PASS production hides demonstration amount; staging labels it\n";
+	if ( 45.0 !== $price['amount'] || str_contains( $price['text'], '(demo)' ) || ! $price['demo'] ) { throw new \RuntimeException( 'Staging price presentation or internal marker is incorrect' ); }
+	echo "PASS production hides demonstration amount; staging shows amount without demo label\n";
 }

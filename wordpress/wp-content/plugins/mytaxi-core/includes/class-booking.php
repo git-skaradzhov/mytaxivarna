@@ -204,7 +204,7 @@ class Booking {
 			);
 		}
 
-		$demo_note = ! empty( $price['demo'] ) ? __( 'Demonstration price only. The team must confirm the actual fare.', 'mytaxi-core' ) : '';
+		$demo_note = ! empty( $price['demo'] ) ? __( 'The team will confirm the final price with you.', 'mytaxi-core' ) : '';
 		$one = (string) $price['text'];
 		if ( ! $return ) {
 			return array(

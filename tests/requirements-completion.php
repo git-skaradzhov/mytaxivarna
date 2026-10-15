@@ -38,8 +38,8 @@ try {
 $questions = array_column( Data::route( $sofia->ID )['faqs'], 'question' );
 $check( 'Sofia has useful FAQ without duplicates', count( $questions ) >= 10 && count( $questions ) === count( array_unique( $questions ) ) );
 $price = Price::present( array( 'price' => '45', 'price_type' => 'fixed', 'price_basis' => 'per_vehicle', 'price_demo' => '1' ) );
-$check( 'demo amount is visibly identified', str_contains( $price['text'], '(demo)' ) && $price['demo'] );
-$check( 'demo return summary explains actual fare must be confirmed', str_contains( Booking::quote( $price, true )['note'], 'Demonstration' ) );
+$check( 'price has no demo suffix and retains internal marker', ! str_contains( $price['text'], '(demo)' ) && 45.0 === $price['amount'] && $price['demo'] );
+$check( 'demo return summary explains actual fare must be confirmed', str_contains( Booking::quote( $price, true )['note'], 'confirm the final price' ) );
 $saved_price_meta = array();
 foreach ( array( '_mytaxi_price', '_mytaxi_price_sample', '_mytaxi_price_type', '_mytaxi_price_basis', '_mytaxi_currency', '_mytaxi_local_demo_price', '_mytaxi_staging_demo_price' ) as $key ) {
 	$saved_price_meta[ $key ] = get_post_meta( $sofia->ID, $key, false );

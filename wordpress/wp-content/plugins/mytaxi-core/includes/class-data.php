@@ -222,7 +222,7 @@ class Data {
 			? $price['text'] . ' for a one-way transfer, ' . strtolower( $price['basis_label'] ) . '. The return on this route costs the same.'
 			: 'Price on request. Send your journey details or contact the team on WhatsApp for a quote for the car.';
 		if ( ! empty( $price['demo'] ) ) {
-			$answer = 'The amount shown above is for demonstration only, not a confirmed fare. Contact this airport team for the actual price for your journey.';
+			$answer = 'See the price shown above for this route. Contact this airport team to confirm the final price for your journey.';
 		}
 		array_unshift( $faqs, array(
 			'question' => sprintf( 'How much is a transfer from %s to %s?', $origin, $destination ),

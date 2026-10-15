@@ -66,7 +66,7 @@ class Price {
 			: $formatted;
 
 		return array(
-			'text'        => $demo ? $text . ' (demo)' : $text,
+			'text'        => $text,
 			'amount'      => (float) $amount,
 			'currency'    => 'EUR',
 			'type'        => $type,

@@ -31,7 +31,7 @@ $lede     = $fixed
 		data-price-amount="<?php echo esc_attr( (string) $price['amount'] ); ?>"
 		data-price-text="<?php echo esc_attr( (string) $price['text'] ); ?>"
 	<?php endif; ?>
-	data-price-note="<?php echo esc_attr( ! empty( $price['demo'] ) ? __( 'Demonstration price only. The team must confirm the actual fare.', 'mytaxi-generatepress' ) : '' ); ?>"
+	data-price-note="<?php echo esc_attr( ! empty( $price['demo'] ) ? __( 'The team will confirm the final price with you.', 'mytaxi-generatepress' ) : '' ); ?>"
 	data-origin="<?php echo esc_attr( $origin ); ?>"
 	data-destination="<?php echo esc_attr( $dest ); ?>"
 	<?php echo mytaxi_hero_style( $photo ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
