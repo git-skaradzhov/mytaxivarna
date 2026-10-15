@@ -1,5 +1,8 @@
 # Booking review — 15 October 2026
 
+Historical local review. The subsequent staging deployment and resolved mail
+transport blocker are recorded in [the deployment report](../../staging-deployment-2026-10-15.md).
+
 ## Version and scope
 
 Reviewed implementation: `8230e7426a7c44ae64b2d99ff777ca02098f8e27`.
