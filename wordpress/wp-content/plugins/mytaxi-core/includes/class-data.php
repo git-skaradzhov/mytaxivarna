@@ -176,9 +176,10 @@ class Data {
 		$id         = (int) $post->ID;
 		$service_id = (int) get_post_meta( $id, '_mytaxi_service_id', true );
 		$meta       = array(
-			'price'       => (string) get_post_meta( $id, '_mytaxi_price', true ),
-			'price_type'  => (string) get_post_meta( $id, '_mytaxi_price_type', true ),
-			'price_basis' => (string) get_post_meta( $id, '_mytaxi_price_basis', true ),
+			'price'        => (string) get_post_meta( $id, '_mytaxi_price', true ),
+			'price_type'   => (string) get_post_meta( $id, '_mytaxi_price_type', true ),
+			'price_basis'  => (string) get_post_meta( $id, '_mytaxi_price_basis', true ),
+			'price_sample' => (string) get_post_meta( $id, '_mytaxi_price_sample', true ),
 		);
 
 		return array(

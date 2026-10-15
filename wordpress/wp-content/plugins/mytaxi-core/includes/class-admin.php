@@ -253,7 +253,7 @@ class Admin {
 		Fields::section( 'Поща за заявки', 'Всички форми използват един общ адрес. Production и тестовият режим са отделни. Празен production адрес не праща към тестовия. From е техническият адрес на сайта. Reply-To става имейлът на клиента, когато е валиден.' );
 		Fields::checkbox( 'mail_test_mode', 'Тестов режим', 'test' === (string) get_option( 'mytaxi_mail_mode', 'production' ), 'Включете го само докато проверявате изпращането. Без отметка се ползва само общият имейл.' );
 		Fields::input( 'test_email', 'Тестов имейл', (string) get_option( 'mytaxi_test_email', '' ), 'Само при включен тестов режим.', 'email' );
-		Fields::input( 'request_email', 'Общ имейл за заявки', (string) get_option( 'mytaxi_request_email', '' ), 'Реалният адрес за всички услуги. Клиентът още не го е изпратил.', 'email' );
+		Fields::input( 'request_email', 'Общ имейл за заявки', (string) get_option( 'mytaxi_request_email', '' ), 'Реалният адрес за всички услуги. Желаният адрес е bookings@mytaxivarna.com. Попълнете го едва след като кутията е създадена и доставката е проверена.', 'email' );
 		Fields::input( 'mail_from', 'From имейл', (string) get_option( 'mytaxi_mail_from', '' ), 'Използвайте пощенска кутия на домейна, от който се изпраща пощата.', 'email' );
 		Fields::input( 'mail_from_name', 'From име', (string) get_option( 'mytaxi_mail_from_name', '' ) );
 		Fields::end_section();
@@ -399,7 +399,7 @@ class Admin {
 		);
 		foreach ( $groups as $service_id => $items ) {
 			Fields::section( $service_id ? get_the_title( $service_id ) : 'Без услуга' );
-			echo '<table class="widefat striped mytaxi-prices"><thead><tr><th>Маршрут</th><th>Цена (EUR)</th><th>Тип</th><th>Основа</th><th>Примерна</th><th></th></tr></thead><tbody>';
+			echo '<table class="widefat striped mytaxi-prices"><thead><tr><th>Маршрут</th><th>Цена (EUR)</th><th>Тип</th><th>Основа</th><th>Примерна (не се показва)</th><th></th></tr></thead><tbody>';
 			foreach ( $items as $route ) {
 				if ( ! current_user_can( 'edit_post', $route->ID ) ) {
 					continue;

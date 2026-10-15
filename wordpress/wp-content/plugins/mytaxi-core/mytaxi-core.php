@@ -20,6 +20,7 @@ define( 'MYTAXI_CORE_VERSION', '1.0.0' );
 
 require_once MYTAXI_CORE_DIR . 'includes/class-fields.php';
 require_once MYTAXI_CORE_DIR . 'includes/class-price.php';
+require_once MYTAXI_CORE_DIR . 'includes/class-booking.php';
 require_once MYTAXI_CORE_DIR . 'includes/class-contacts.php';
 require_once MYTAXI_CORE_DIR . 'includes/class-post-types.php';
 require_once MYTAXI_CORE_DIR . 'includes/class-data.php';

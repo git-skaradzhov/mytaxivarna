@@ -92,7 +92,7 @@ class Setup {
 		self::refresh_editorial();
 		self::apply_design_copy();
 		self::apply_confirmed_details();
-		self::seed_sample_prices();
+		self::apply_search_copy();
 		self::flush();
 
 		return $services;
@@ -400,42 +400,6 @@ class Setup {
 	}
 
 	/**
-	 * Fill empty route prices with labelled sample fares. A saved price is left alone.
-	 */
-	public static function seed_sample_prices() {
-		if ( '1' === (string) get_option( 'mytaxi_sample_prices_ready', '' ) ) {
-			return;
-		}
-		$route = self::find( 'mytaxi_route', 'varna-airport-to-golden-sands' );
-		if ( ! $route ) {
-			return;
-		}
-		$prices = array(
-			'varna-airport-to-golden-sands' => '45',
-			'varna-airport-to-albena'       => '52',
-			'varna-airport-to-kranevo'      => '40',
-			'varna-airport-to-balchik'      => '58',
-			'sofia-airport-to-sofia'        => '35',
-		);
-		foreach ( $prices as $slug => $amount ) {
-			$post = self::find( 'mytaxi_route', $slug );
-			if ( ! $post ) {
-				continue;
-			}
-			$current = Fields::price( (string) get_post_meta( $post->ID, '_mytaxi_price', true ) );
-			if ( '' !== $current ) {
-				continue;
-			}
-			update_post_meta( $post->ID, '_mytaxi_price', $amount );
-			update_post_meta( $post->ID, '_mytaxi_currency', 'EUR' );
-			update_post_meta( $post->ID, '_mytaxi_price_type', 'fixed' );
-			update_post_meta( $post->ID, '_mytaxi_price_basis', 'per_vehicle' );
-			update_post_meta( $post->ID, '_mytaxi_price_sample', '1' );
-		}
-		update_option( 'mytaxi_sample_prices_ready', '1', false );
-	}
-
-	/**
 	 * Write the contacts and booking terms the client confirmed.
 	 */
 	private static function apply_confirmed_details() {
@@ -604,6 +568,203 @@ class Setup {
 	}
 
 	/**
+	 * Search descriptions, route copy, and FAQs built from confirmed terms.
+	 * Runs once and only replaces text that is still the seeded version.
+	 */
+	private static function apply_search_copy() {
+		if ( '1' === (string) get_option( 'mytaxi_search_copy_ready', '' ) ) {
+			return;
+		}
+		if ( ! self::find( 'mytaxi_route', 'sofia-airport-to-sofia' ) ) {
+			return;
+		}
+
+		$page_descriptions = array(
+			'home'              => 'Local taxis in Golden Sands, Albena and Kranevo, and private transfers from Varna Airport and Sofia Airport at a fixed price for the car. Open 24 hours.',
+			'airport-transfers' => 'Private transfers from Varna Airport and Sofia Airport. A fixed price for the car, a driver in arrivals with a name sign, and no charge for flight delays.',
+			'routes'            => 'Transfers from Varna Airport to Golden Sands, Albena, Kranevo and Balchik, and from Sofia Airport to Sofia. Each route has a fixed price for the car.',
+			'local-taxi'        => 'Local taxi in Golden Sands, Albena and Kranevo, open every day, 24 hours. Each resort has its own team and its own phone number.',
+			'contact'           => 'Phone numbers for Taxi Golden Sands, Taxi Albena, Taxi Kranevo, Varna Airport Transfers and Sofia Airport Transfers. Each service has its own number.',
+		);
+		foreach ( $page_descriptions as $slug => $description ) {
+			$page = self::find( 'page', $slug );
+			if ( $page && '' === trim( (string) $page->post_excerpt ) ) {
+				wp_update_post(
+					array(
+						'ID'           => $page->ID,
+						'post_excerpt' => $description,
+					)
+				);
+			}
+		}
+
+		$services = array(
+			'taxi-golden-sands'       => array(
+				'desc' => 'Local taxi in Golden Sands, open every day, 24 hours. Call Taxi Golden Sands when you need a car in the resort.',
+				'body' => '<p>Call the number on this page when you need a taxi in Golden Sands. The local team answers every day, 24 hours.</p><p>Flying into Varna? Book the <a href="/varna-airport-to-golden-sands/">transfer from Varna Airport to Golden Sands</a>. It has its own team and phone number.</p>',
+			),
+			'taxi-albena'             => array(
+				'desc' => 'Local taxi in Albena, open every day, 24 hours. Call Taxi Albena when you need a car in the resort.',
+				'body' => '<p>Call Taxi Albena when you are in the resort and need a car. The local team answers every day, 24 hours.</p><p>Flying into Varna? Book the <a href="/varna-airport-to-albena/">transfer from Varna Airport to Albena</a>. It has its own team and phone number.</p>',
+			),
+			'taxi-kranevo'            => array(
+				'desc' => 'Local taxi in Kranevo, open every day, 24 hours. Call Taxi Kranevo when you need a car in Kranevo.',
+				'body' => '<p>Call Taxi Kranevo when you are in Kranevo and need a car. The local team answers every day, 24 hours.</p><p>Flying into Varna? Book the <a href="/varna-airport-to-kranevo/">transfer from Varna Airport to Kranevo</a>. It has its own team and phone number.</p>',
+			),
+			'varna-airport-transfers' => array(
+				'desc' => 'Private transfers from Varna Airport to Golden Sands, Albena, Kranevo and Balchik. A fixed price for the car, a name sign in arrivals, no charge for delays.',
+				'body' => '<p>Varna Airport is west of Varna. Transfers from the airport go north along the coast to <a href="/varna-airport-to-golden-sands/">Golden Sands</a>, <a href="/varna-airport-to-albena/">Albena</a>, <a href="/varna-airport-to-kranevo/">Kranevo</a> and <a href="/varna-airport-to-balchik/">Balchik</a>. Each route has its own page and price.</p><p>For another address, send a request with the form on this page.</p>',
+			),
+			'sofia-airport-transfers' => array(
+				'desc' => 'Private transfers from Sofia Airport to Sofia. A fixed price for the car, a driver in arrivals with a name sign, and no charge for flight delays.',
+				'body' => '<p>Sofia Airport Transfers is a separate service from Varna Airport Transfers, with its own phone number. It covers the <a href="/sofia-airport-to-sofia/">transfer from Sofia Airport to Sofia</a>.</p><p>Sofia Airport is east of the city centre and has two terminals. Send your flight number with the request so the driver waits in the right arrivals hall.</p>',
+			),
+		);
+		$service_bodies = array();
+		foreach ( self::services() as $row ) {
+			$service_bodies[ $row['slug'] ] = array( self::paragraphs( $row['body'] ), $row['meta_desc'] );
+		}
+		foreach ( $services as $slug => $copy ) {
+			$post = self::find( 'mytaxi_service', $slug );
+			if ( ! $post ) {
+				continue;
+			}
+			list( $seeded_body, $seeded_desc ) = $service_bodies[ $slug ];
+			if ( trim( (string) $post->post_content ) === $seeded_body ) {
+				wp_update_post(
+					array(
+						'ID'           => $post->ID,
+						'post_content' => $copy['body'],
+					)
+				);
+			}
+			if ( (string) get_post_meta( $post->ID, '_mytaxi_meta_description', true ) === $seeded_desc ) {
+				update_post_meta( $post->ID, '_mytaxi_meta_description', $copy['desc'] );
+			}
+		}
+
+		$routes = array(
+			'varna-airport-to-golden-sands' => '<p>Golden Sands is a Black Sea resort north of Varna. The transfer takes you from Varna Airport to your hotel or address in the resort. Add the hotel name to the request.</p><p>During your stay, <a href="/taxi-golden-sands/">Taxi Golden Sands</a> runs local trips in the resort.</p>',
+			'varna-airport-to-albena'       => '<p>Albena is a resort on the Black Sea coast north of Golden Sands, on the way to Balchik. The transfer takes you from Varna Airport to your hotel in Albena. Add the hotel name to the request.</p><p>During your stay, <a href="/taxi-albena/">Taxi Albena</a> runs local trips in the resort.</p>',
+			'varna-airport-to-kranevo'      => '<p>Kranevo is a seaside village next to Albena, north of Golden Sands. The transfer takes you from Varna Airport to your hotel or address in Kranevo. Add the address to the request.</p><p>During your stay, <a href="/taxi-kranevo/">Taxi Kranevo</a> runs local trips in the village.</p>',
+			'varna-airport-to-balchik'      => '<p>Balchik is a town on the coast north of Albena, known for its Palace and Botanical Garden. The transfer takes you from Varna Airport to your hotel or address in Balchik. Add the address to the request.</p><p>For another place on the coast, send a request from <a href="/varna-airport-transfers/">Varna Airport Transfers</a>.</p>',
+			'sofia-airport-to-sofia'        => '<p>Sofia Airport is east of the city centre and has two terminals. Your flight number shows which terminal you land at, so the driver waits in the right arrivals hall. Add the address in Sofia to the request.</p><p>This route is run by <a href="/sofia-airport-transfers/">Sofia Airport Transfers</a>, which has its own phone number, separate from Varna Airport Transfers.</p>',
+		);
+		$seeded_route_body = self::paragraphs( 'Tell us your pickup time. We’ll confirm availability and your quote before the journey.' );
+		foreach ( self::routes() as $row ) {
+			$post = self::find( 'mytaxi_route', $row['slug'] );
+			if ( ! $post ) {
+				continue;
+			}
+			if ( isset( $routes[ $row['slug'] ] ) && trim( (string) $post->post_content ) === $seeded_route_body ) {
+				wp_update_post(
+					array(
+						'ID'           => $post->ID,
+						'post_content' => $routes[ $row['slug'] ],
+					)
+				);
+			}
+			if ( (string) get_post_meta( $post->ID, '_mytaxi_meta_description', true ) === $row['meta_desc'] ) {
+				update_post_meta(
+					$post->ID,
+					'_mytaxi_meta_description',
+					sprintf( 'Private transfer from %1$s to %2$s. A fixed price for the car, a driver in arrivals with a name sign, and no charge for flight delays.', $row['origin'], $row['destination'] )
+				);
+			}
+			if ( '' === (string) get_post_meta( $post->ID, '_mytaxi_meeting', true ) ) {
+				update_post_meta( $post->ID, '_mytaxi_meeting', 'The driver waits in the arrivals hall with a name sign.' );
+			}
+			if ( '' === (string) get_post_meta( $post->ID, '_mytaxi_delay', true ) ) {
+				update_post_meta( $post->ID, '_mytaxi_delay', 'A delayed flight does not add a waiting charge.' );
+			}
+		}
+
+		$terminal = array(
+			'question' => 'Which terminal will the driver meet me at?',
+			'answer'   => 'Sofia Airport has two terminals. The driver waits in the arrivals hall of the terminal your flight lands at, so please send the flight number before the pickup.',
+		);
+		self::add_faqs( 'mytaxi_service', 'sofia-airport-transfers', array( $terminal ) );
+		self::add_faqs(
+			'mytaxi_route',
+			'sofia-airport-to-sofia',
+			array(
+				$terminal,
+				array(
+					'question' => 'Is this the same number as Varna Airport Transfers?',
+					'answer'   => 'No. Sofia Airport Transfers has its own phone number, shown on this page. Use it for transfers from Sofia Airport.',
+				),
+				array(
+					'question' => 'Can I book the trip back to Sofia Airport?',
+					'answer'   => 'Yes. Choose a return when you send the request. The return on the same route is the same price.',
+				),
+			)
+		);
+
+		if ( ! Data::home_extras()['faqs'] ) {
+			$home_faqs = array(
+				array(
+					'question' => 'Do the local taxis and the airport transfers share one number?',
+					'answer'   => 'No. Taxi Golden Sands, Taxi Albena and Taxi Kranevo each have their own number. Varna Airport Transfers and Sofia Airport Transfers have separate numbers too. Use the number on the page for your trip.',
+				),
+				array(
+					'question' => 'How is the airport transfer price set?',
+					'answer'   => 'It is a fixed price for the car, not for each person, for a one-way transfer. The return on the same route is the same price.',
+				),
+				array(
+					'question' => 'Where does the driver meet me at the airport?',
+					'answer'   => 'In the arrivals hall, with a name sign.',
+				),
+				array(
+					'question' => 'What if my flight is delayed?',
+					'answer'   => 'A delayed flight does not add a waiting charge. Send the flight number before the pickup.',
+				),
+				array(
+					'question' => 'How do I pay for an airport transfer?',
+					'answer'   => 'You pay the driver in cash or by card when the transfer is done. No payment is taken in advance, and you can cancel at any time with no charge.',
+				),
+				array(
+					'question' => 'Can I ask for a child seat?',
+					'answer'   => 'Yes. A child seat is free when you ask for it with the booking. We confirm whether a seat is available.',
+				),
+				array(
+					'question' => 'How early should I book a transfer?',
+					'answer'   => 'At least one day before the flight. The transfer is confirmed after the price is agreed and you give one passenger’s name and the flight number.',
+				),
+			);
+			update_option( 'mytaxi_home_faq', Fields::encode_list( $home_faqs ), false );
+		}
+
+		update_option( 'mytaxi_search_copy_ready', '1', false );
+	}
+
+	/**
+	 * Append FAQ pairs whose question is not on the record yet.
+	 *
+	 * @param string                                   $type Post type.
+	 * @param string                                   $slug Slug.
+	 * @param array<int,array{question:string,answer:string}> $rows FAQ pairs.
+	 */
+	private static function add_faqs( $type, $slug, array $rows ) {
+		$post = self::find( $type, $slug );
+		if ( ! $post ) {
+			return;
+		}
+		$faqs      = Fields::decode_list( get_post_meta( $post->ID, '_mytaxi_faq', true ) );
+		$questions = array();
+		foreach ( $faqs as $row ) {
+			if ( is_array( $row ) ) {
+				$questions[] = (string) ( $row['question'] ?? '' );
+			}
+		}
+		foreach ( $rows as $row ) {
+			if ( ! in_array( $row['question'], $questions, true ) ) {
+				$faqs[] = $row;
+			}
+		}
+		update_post_meta( $post->ID, '_mytaxi_faq', Fields::encode_list( $faqs ) );
+	}
+
+	/**
 	 * Replace a FAQ answer only while it is still the seeded sentence.
 	 *
 	 * @param int               $post_id Post ID.
@@ -717,6 +878,15 @@ class Setup {
 					'ID'           => $privacy->ID,
 					'post_title'   => 'Privacy policy',
 					'post_content' => '<p>We use the name, phone, email and journey details you submit so the team can reply about that request. The form is not a mailing list.</p>',
+				)
+			);
+		}
+		$privacy = get_page_by_path( 'privacy-policy' );
+		if ( $privacy && 'draft' === $privacy->post_status ) {
+			wp_update_post(
+				array(
+					'ID'          => $privacy->ID,
+					'post_status' => 'publish',
 				)
 			);
 		}

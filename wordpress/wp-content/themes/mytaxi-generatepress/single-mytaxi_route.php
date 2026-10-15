@@ -15,7 +15,7 @@ $reviews = class_exists( '\MyTaxi\Core\Data' ) ? \MyTaxi\Core\Data::review_sourc
 $price   = (array) ( $route['price'] ?? array() );
 $origin  = (string) ( $route['origin'] ?? '' );
 $dest    = (string) ( $route['destination'] ?? '' );
-$sample  = '1' === (string) get_post_meta( get_the_ID(), '_mytaxi_price_sample', true );
+$fixed   = mytaxi_fixed_price( $price );
 
 mytaxi_open( 'template-parts/route-hero', array( 'route' => $route ) );
 
@@ -32,8 +32,8 @@ get_template_part(
 			),
 			array(
 				'icon'  => 'card',
-				'value' => ! empty( $price['offer'] ) ? (string) $price['text'] : '',
-				'label' => __( 'fixed price for the car', 'mytaxi-generatepress' ),
+				'value' => $fixed ? (string) $price['text'] : __( 'Price on request', 'mytaxi-generatepress' ),
+				'label' => $fixed ? __( 'for the car', 'mytaxi-generatepress' ) : __( 'per car, not per person', 'mytaxi-generatepress' ),
 			),
 			array(
 				'icon'  => 'sign',
@@ -46,6 +46,8 @@ get_template_part(
 ?>
 <div class="mt-route-body" data-panel="journey">
 	<?php
+	get_template_part( 'template-parts/route-about', null, array( 'route' => $route ) );
+
 	get_template_part(
 		'template-parts/photo-cards',
 		null,
@@ -55,13 +57,13 @@ get_template_part(
 		)
 	);
 
-	$amount = ! empty( $price['offer'] ) ? (string) ( $price['text'] ?? '' ) : '';
 	get_template_part(
 		'template-parts/vehicles',
 		null,
 		array(
-			'items' => mytaxi_vehicle_items( $service, $amount ),
-			'note'  => $sample && $amount ? __( 'Sample price for this route. The team confirms the price with you before the transfer.', 'mytaxi-generatepress' ) : '',
+			'items'   => mytaxi_vehicle_items( $service, $fixed ? (string) $price['text'] : '' ),
+			'heading' => __( 'Our cars', 'mytaxi-generatepress' ),
+			'text'    => __( 'Private cars for up to 4 or up to 5 passengers. Tell us your passengers and luggage, and the team confirms the right car.', 'mytaxi-generatepress' ),
 		)
 	);
 	?>
@@ -73,7 +75,7 @@ get_template_part(
 	array(
 		'routes'     => $related,
 		'panel'      => true,
-		'heading'    => __( 'Other travellers also booked', 'mytaxi-generatepress' ),
+		'heading'    => __( 'Other popular routes', 'mytaxi-generatepress' ),
 		'text'       => sprintf( __( 'From %s', 'mytaxi-generatepress' ), $origin ),
 		'more_url'   => home_url( '/routes/' ),
 		'more_label' => __( 'View all routes', 'mytaxi-generatepress' ),
@@ -96,11 +98,11 @@ get_template_part(
 				),
 				array(
 					'title' => __( 'Add your details', 'mytaxi-generatepress' ),
-					'text'  => __( 'Name, phone, and hotel. The flight number can follow before the pickup.', 'mytaxi-generatepress' ),
+					'text'  => __( 'Name, phone, and hotel. The flight number can follow, and we need it to confirm.', 'mytaxi-generatepress' ),
 				),
 				array(
 					'title' => __( 'We confirm', 'mytaxi-generatepress' ),
-					'text'  => __( 'The team confirms the price, the car, and the pickup with you.', 'mytaxi-generatepress' ),
+					'text'  => __( 'Your booking is confirmed after we agree the price and receive a passenger name and flight number.', 'mytaxi-generatepress' ),
 				),
 				array(
 					'title' => __( 'Meet your driver', 'mytaxi-generatepress' ),
@@ -115,7 +117,7 @@ get_template_part(
 	mytaxi_faqs( $route['faqs'] ?? array() );
 	mytaxi_cta(
 		sprintf( __( 'Arrange your %s transfer', 'mytaxi-generatepress' ), $dest ),
-		sprintf( __( 'Send a request to the %s team, or message them on WhatsApp.', 'mytaxi-generatepress' ), (string) ( $service['title'] ?? '' ) ),
+		sprintf( __( 'Send a request to the %s team, or message them on WhatsApp or Viber.', 'mytaxi-generatepress' ), (string) ( $service['title'] ?? '' ) ),
 		'#request',
 		__( 'Request your transfer', 'mytaxi-generatepress' )
 	);

@@ -96,7 +96,6 @@ get_template_part(
 		'items' => $vehicles,
 		'link'  => '#services',
 		'text'  => __( 'Private cars for up to 4 or 5 passengers. The price is for the car, not per person.', 'mytaxi-generatepress' ),
-		'note'  => mytaxi_routes_sample( $all ) ? __( 'Sample prices. The team confirms the price with you before the transfer.', 'mytaxi-generatepress' ) : '',
 	)
 );
 

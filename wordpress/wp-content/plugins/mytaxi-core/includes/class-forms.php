@@ -144,7 +144,11 @@ class Forms {
 			'mail_from'           => __( 'The request was not sent because the site mail sender is not configured.', 'mytaxi-core' ),
 			'sent'                => __( 'Your request has been sent. We’ll confirm availability and your quote before your journey.', 'mytaxi-core' ),
 		);
-		return $messages[ $code ] ?? $messages['rejected'];
+		if ( isset( $messages[ $code ] ) ) {
+			return $messages[ $code ];
+		}
+		$booking = Booking::message( (string) $code );
+		return '' !== $booking ? $booking : $messages['rejected'];
 	}
 
 	/**
@@ -348,16 +352,47 @@ class Forms {
 		if ( '' === $old['destination'] || strlen( $old['destination'] ) > 160 ) {
 			$errors[] = 'destination_required';
 		}
-		if ( $airport && '' === $old['datetime'] ) {
-			$errors[] = 'datetime_required';
+		if ( $airport ) {
+			$parts   = explode( 'T', $old['datetime'], 2 );
+			$journey = Booking::journey_errors(
+				array(
+					'date'       => $parts[0],
+					'time'       => $parts[1] ?? '',
+					'passengers' => $old['passengers'],
+				)
+			);
+			if ( '' === $old['datetime'] ) {
+				$errors[] = 'datetime_required';
+			} elseif ( isset( $journey['date'] ) || isset( $journey['time'] ) ) {
+				$errors[] = $journey['date'] ?? 'datetime_invalid';
+			} elseif ( ! self::parse_datetime( $old['datetime'] ) ) {
+				$errors[] = 'datetime_invalid';
+			}
+			if ( isset( $journey['passengers'] ) ) {
+				$errors[] = $journey['passengers'];
+			}
 		} elseif ( '' !== $old['datetime'] && ! self::parse_datetime( $old['datetime'] ) ) {
 			$errors[] = 'datetime_invalid';
+		}
+		if ( $airport ) {
+			return self::other_errors( $old, $errors );
 		}
 		if ( '' === $old['passengers'] ) {
 			$errors[] = 'passengers_required';
 		} elseif ( ! ctype_digit( $old['passengers'] ) || (int) $old['passengers'] < 1 || (int) $old['passengers'] > 16 ) {
 			$errors[] = 'passengers_invalid';
 		}
+		return self::other_errors( $old, $errors );
+	}
+
+	/**
+	 * Length limits shared by both service types.
+	 *
+	 * @param array<string,string> $old Values.
+	 * @param array<int,string>    $errors Errors so far.
+	 * @return array<int,string>
+	 */
+	private static function other_errors( array $old, array $errors ) {
 		if ( strlen( $old['notes'] ) > 2000 || strlen( $old['luggage'] ) > 200 || strlen( $old['flight'] ) > 20 ) {
 			$errors[] = 'rejected';
 		}

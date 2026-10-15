@@ -227,7 +227,10 @@ function mytaxi_hero_photo( $slug ) {
 		'sofia-airport-to-sofia'        => 'sofia.jpg',
 	);
 	$file = $files[ (string) $slug ] ?? 'home.jpg';
-	if ( ! is_file( get_stylesheet_directory() . '/assets/images/hero/' . $file ) ) {
+	$webp = substr( $file, 0, -4 ) . '.webp';
+	if ( is_file( get_stylesheet_directory() . '/assets/images/hero/' . $webp ) ) {
+		$file = $webp;
+	} elseif ( ! is_file( get_stylesheet_directory() . '/assets/images/hero/' . $file ) ) {
 		return '';
 	}
 	return get_stylesheet_directory_uri() . '/assets/images/hero/' . $file;
@@ -282,21 +285,6 @@ function mytaxi_routes_from( array $routes ) {
 }
 
 /**
- * Whether any of these routes shows a sample price.
- *
- * @param array<int,array<string,mixed>> $routes Routes.
- * @return bool
- */
-function mytaxi_routes_sample( array $routes ) {
-	foreach ( $routes as $route ) {
-		if ( '1' === (string) get_post_meta( (int) ( $route['id'] ?? 0 ), '_mytaxi_price_sample', true ) ) {
-			return true;
-		}
-	}
-	return false;
-}
-
-/**
  * Vehicle cards of one airport service.
  *
  * @param array<string,mixed> $service Airport service.
@@ -316,11 +304,13 @@ function mytaxi_vehicle_items( array $service, $price, $place = false ) {
 		}
 		$items[] = array(
 			'id'    => (int) $service[ $key ],
-			'title' => __( 'Private transfer', 'mytaxi-generatepress' ),
+			'title' => 'vehicle_4_id' === $key ? __( 'Car for up to 4', 'mytaxi-generatepress' ) : __( 'Car for up to 5', 'mytaxi-generatepress' ),
 			'price' => (string) $price,
 			'text'  => $place
 				? mytaxi_place_name( (string) ( $service['title'] ?? '' ) ) . ' · ' . $label
-				: sprintf( __( 'Dedicated car, %s', 'mytaxi-generatepress' ), $label ),
+				: ( 'vehicle_4_id' === $key
+					? __( 'Private car for up to 4 passengers with standard luggage.', 'mytaxi-generatepress' )
+					: __( 'Private car for up to 5 passengers. Tell us about larger luggage.', 'mytaxi-generatepress' ) ),
 		);
 	}
 	return $items;
@@ -364,14 +354,14 @@ function mytaxi_transfer_steps() {
  */
 function mytaxi_airport_cards( array $service ) {
 	$varna   = 'varna-airport-transfers' === (string) ( $service['slug'] ?? '' );
-	$gallery = array_values( array_diff( (array) ( $service['gallery'] ?? array() ), array( (int) ( $service['vehicle_id'] ?? 0 ) ) ) );
+	$gallery = array_values( array_diff( (array) ( $service['gallery'] ?? array() ), array( (int) ( $service['vehicle_id'] ?? 0 ), (int) ( $service['vehicle_4_id'] ?? 0 ) ) ) );
 	return array(
 		array(
-			'image_id' => (int) ( $service['vehicle_4_id'] ?? 0 ),
+			'image_id' => (int) ( $gallery[1] ?? ( $service['vehicle_4_id'] ?? 0 ) ),
 			'file'     => $varna ? 'varna-vehicle.jpg' : '',
 			'icon'     => 'card',
-			'title'    => __( 'One fixed price', 'mytaxi-generatepress' ),
-			'text'     => __( 'The price is for the car, not per person. The return costs the same.', 'mytaxi-generatepress' ),
+			'title'    => __( 'One price for the car', 'mytaxi-generatepress' ),
+			'text'     => __( 'The price is per car, not per person. No prepayment: pay the driver in cash or by card.', 'mytaxi-generatepress' ),
 		),
 		array(
 			'image_id' => (int) ( $service['image_id'] ?? 0 ),
@@ -385,7 +375,7 @@ function mytaxi_airport_cards( array $service ) {
 			'file'     => $varna ? 'varna-interior.jpg' : '',
 			'icon'     => 'seat',
 			'title'    => __( 'Whatever your trip needs', 'mytaxi-generatepress' ),
-			'text'     => __( 'A free child seat when requested with the booking. Pay the driver in cash or by card.', 'mytaxi-generatepress' ),
+			'text'     => __( 'A free child seat when you ask for it in advance. Free cancellation.', 'mytaxi-generatepress' ),
 		),
 	);
 }
@@ -440,17 +430,51 @@ function mytaxi_theme_img( $file, $alt, $eager = false ) {
 	if ( ! is_file( $path ) ) {
 		return;
 	}
-	$size = getimagesize( $path );
-	$wide = (int) ( $size[0] ?? 1600 );
-	$high = (int) ( $size[1] ?? 1067 );
+	$size   = getimagesize( $path );
+	$wide   = (int) ( $size[0] ?? 1600 );
+	$high   = (int) ( $size[1] ?? 1067 );
+	$dir    = get_stylesheet_directory_uri() . '/assets/images/';
+	$base   = preg_replace( '/\.(jpe?g|png)$/i', '', $file );
+	$src    = $dir . $file;
+	$srcset = '';
+	if ( is_file( get_stylesheet_directory() . '/assets/images/' . $base . '.webp' ) ) {
+		$src = $dir . $base . '.webp';
+		if ( is_file( get_stylesheet_directory() . '/assets/images/' . $base . '-800.webp' ) ) {
+			$src    = $dir . $base . '-800.webp';
+			$srcset = $dir . $base . '-800.webp 800w, ' . $dir . $base . '.webp ' . $wide . 'w';
+		}
+	}
 	printf(
-		'<img class="mt-img" src="%1$s" alt="%2$s" width="%3$d" height="%4$d" decoding="async"%5$s>',
-		esc_url( get_stylesheet_directory_uri() . '/assets/images/' . $file ),
+		'<img class="mt-img" src="%1$s"%2$s alt="%3$s" width="%4$d" height="%5$d" decoding="async"%6$s>',
+		esc_url( $src ),
+		$srcset ? ' srcset="' . esc_attr( $srcset ) . '" sizes="' . ( $eager ? '100vw' : '(min-width: 1100px) 520px, (min-width: 700px) 50vw, 100vw' ) . '"' : '',
 		esc_attr( $alt ),
 		$wide,
 		$high,
 		$eager ? ' loading="eager" fetchpriority="high"' : ' loading="lazy"'
 	);
+}
+
+/**
+ * Inline style for a photo hero: the full photo, plus a smaller one for phones when it exists.
+ *
+ * @param string $url Photo URL from mytaxi_hero_photo().
+ * @return string
+ */
+function mytaxi_hero_style( $url ) {
+	$url = (string) $url;
+	if ( '' === $url ) {
+		return '';
+	}
+	$style = '--mt-hero:url(' . esc_url( $url ) . ')';
+	$small = preg_replace( '/\.webp$/', '-768.webp', $url );
+	if ( $small !== $url ) {
+		$path = str_replace( get_stylesheet_directory_uri(), get_stylesheet_directory(), $small );
+		if ( is_file( $path ) ) {
+			$style .= ';--mt-hero-sm:url(' . esc_url( $small ) . ')';
+		}
+	}
+	return ' style="' . esc_attr( $style ) . '"';
 }
 
 /**
@@ -491,7 +515,7 @@ function mytaxi_trust_row( $extra = '' ) {
 		'check' => __( 'Free cancellation', 'mytaxi-generatepress' ),
 		'clock' => __( 'No charge for flight delays', 'mytaxi-generatepress' ),
 		'card'  => __( 'No prepayment', 'mytaxi-generatepress' ),
-		'phone' => __( 'Open 24/7', 'mytaxi-generatepress' ),
+		'phone' => __( 'Open 24/7, all year', 'mytaxi-generatepress' ),
 	);
 	echo '<ul class="mt-trust' . ( $extra ? ' ' . esc_attr( $extra ) : '' ) . '">';
 	foreach ( $items as $icon => $label ) {
@@ -620,6 +644,76 @@ function mytaxi_contact_buttons( array $service ) {
 		echo '<a class="mt-btn mt-btn--ghost mt-btn--channel" href="' . esc_url( $contacts['viber_url'] ) . '">Viber</a>';
 	}
 	mytaxi_location_button( $service );
+}
+
+/**
+ * WhatsApp first, then Viber and the phone number, as compact links.
+ *
+ * @param array<string,mixed> $service Service.
+ */
+function mytaxi_channel_links( array $service ) {
+	$contacts = (array) ( $service['contacts'] ?? array() );
+	echo '<span class="mt-channels">';
+	if ( ! empty( $contacts['whatsapp_url'] ) ) {
+		echo '<a class="mt-btn mt-btn--yellow mt-channels__main" href="' . esc_url( $contacts['whatsapp_url'] ) . '">WhatsApp</a>';
+	}
+	if ( ! empty( $contacts['viber_url'] ) ) {
+		echo '<a class="mt-btn mt-btn--ghost" href="' . esc_url( $contacts['viber_url'] ) . '">Viber</a>';
+	}
+	if ( ! empty( $contacts['phone_href'] ) ) {
+		echo '<a class="mt-btn mt-btn--ghost" href="' . esc_url( $contacts['phone_href'] ) . '">';
+		mytaxi_icon( 'phone' );
+		echo '<span>' . esc_html( mytaxi_phone_text( (string) $contacts['phone'] ) ) . '</span></a>';
+	}
+	echo '</span>';
+}
+
+/**
+ * Direct contact line next to a request form. Hidden when the form itself already offers only direct contact.
+ *
+ * @param array<string,mixed> $service Service.
+ * @param string              $lead Lead text.
+ * @param string              $panel Route step the line belongs to.
+ */
+function mytaxi_direct_line( array $service, $lead, $panel = '' ) {
+	if ( empty( $service['contacts'] ) || ( class_exists( '\MyTaxi\Core\ContactForm' ) && ! \MyTaxi\Core\ContactForm::can_send() ) ) {
+		return;
+	}
+	echo '<div class="mt-direct" data-direct' . ( $panel ? ' data-panel="' . esc_attr( $panel ) . '"' : '' ) . '>';
+	echo '<p>' . esc_html( $lead ) . '</p>';
+	mytaxi_channel_links( $service );
+	echo '</div>';
+}
+
+/**
+ * Whether a route price is a confirmed fixed amount that may be shown as a price.
+ *
+ * @param array<string,mixed> $price Output of Price::present().
+ * @return bool
+ */
+function mytaxi_fixed_price( array $price ) {
+	return ! empty( $price['offer'] ) && 'fixed' === ( $price['type'] ?? '' ) && null !== ( $price['amount'] ?? null );
+}
+
+/**
+ * Price lines for the request summary. The browser redraws them from the same rules.
+ *
+ * @param array<string,mixed> $price Output of Price::present().
+ * @param bool                $return Return requested.
+ */
+function mytaxi_quote( array $price, $return ) {
+	if ( ! class_exists( '\MyTaxi\Core\Booking' ) ) {
+		return;
+	}
+	$quote = \MyTaxi\Core\Booking::quote( $price, (bool) $return );
+	echo $quote['confirmed'] ? '<dl data-confirmed>' : '<dl>';
+	foreach ( $quote['lines'] as $line ) {
+		echo '<div><dt>' . esc_html( $line['label'] ) . '</dt><dd>' . esc_html( $line['value'] ) . '</dd></div>';
+	}
+	echo '</dl>';
+	if ( '' !== $quote['note'] ) {
+		echo '<p>' . esc_html( $quote['note'] ) . '</p>';
+	}
 }
 
 /**

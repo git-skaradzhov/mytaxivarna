@@ -27,8 +27,8 @@ class Plugin {
 				return $protocols;
 			}
 		);
+		add_filter( 'image_editor_output_format', array( __CLASS__, 'webp_sizes' ) );
 
-		add_action( 'init', array( 'MyTaxi\\Core\\Setup', 'seed_sample_prices' ), 20 );
 		PostTypes::boot();
 		Routing::boot();
 		Meta::boot();
@@ -61,6 +61,22 @@ class Plugin {
 		}
 
 		return 'en_US';
+	}
+
+	/**
+	 * Resized JPEG and PNG uploads are saved as WebP when the server can write it.
+	 * The original upload stays as it was.
+	 *
+	 * @param array<string,string> $formats Source MIME to output MIME.
+	 * @return array<string,string>
+	 */
+	public static function webp_sizes( $formats ) {
+		if ( ! wp_image_editor_supports( array( 'mime_type' => 'image/webp' ) ) ) {
+			return $formats;
+		}
+		$formats['image/jpeg'] = 'image/webp';
+		$formats['image/png']  = 'image/webp';
+		return $formats;
 	}
 
 	/**

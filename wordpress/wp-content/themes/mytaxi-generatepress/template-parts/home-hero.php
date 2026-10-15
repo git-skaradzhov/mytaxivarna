@@ -14,6 +14,7 @@ $photo  = (string) ( $args['photo'] ?? '' );
 $title  = (string) ( $args['title'] ?? mytaxi_line( 'home_title' ) );
 $lede   = (string) ( $args['lede'] ?? mytaxi_line( 'home_lead' ) );
 $local  = $args['local'] ?? true;
+$max    = class_exists( '\MyTaxi\Core\Booking' ) ? \MyTaxi\Core\Booking::MAX_PASSENGERS : 5;
 
 $origins = array();
 foreach ( $routes as $route ) {
@@ -23,7 +24,7 @@ foreach ( $routes as $route ) {
 	}
 }
 ?>
-<section class="mt-photo-hero"<?php echo $photo ? ' style="background-image:url(' . esc_url( $photo ) . ')"' : ''; ?>>
+<section class="mt-photo-hero"<?php echo mytaxi_hero_style( $photo ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
 	<div class="mt-photo-hero__inner">
 		<?php if ( ! empty( $args['crumbs'] ) ) : ?>
 			<?php mytaxi_breadcrumbs(); ?>
@@ -49,7 +50,8 @@ foreach ( $routes as $route ) {
 						<option value=""><?php esc_html_e( 'Choose destination', 'mytaxi-generatepress' ); ?></option>
 						<?php foreach ( $origins as $origin => $items ) : ?>
 							<?php foreach ( $items as $route ) : ?>
-								<option value="<?php echo esc_url( (string) $route['url'] ); ?>" data-origin="<?php echo esc_attr( $origin ); ?>" data-route="<?php echo esc_attr( (string) (int) $route['id'] ); ?>"><?php echo esc_html( (string) $route['destination'] ); ?></option>
+								<?php $channels = (array) ( $route['service']['contacts'] ?? array() ); ?>
+								<option value="<?php echo esc_url( (string) $route['url'] ); ?>" data-origin="<?php echo esc_attr( $origin ); ?>" data-route="<?php echo esc_attr( (string) (int) $route['id'] ); ?>" data-whatsapp="<?php echo esc_url( (string) ( $channels['whatsapp_url'] ?? '' ) ); ?>" data-viber="<?php echo esc_url( (string) ( $channels['viber_url'] ?? '' ), array( 'viber' ) ); ?>" data-phone="<?php echo esc_url( (string) ( $channels['phone_href'] ?? '' ), array( 'tel' ) ); ?>"><?php echo esc_html( (string) $route['destination'] ); ?></option>
 							<?php endforeach; ?>
 						<?php endforeach; ?>
 					</select>
@@ -58,19 +60,28 @@ foreach ( $routes as $route ) {
 					<label for="mt-search-date"><?php esc_html_e( 'Flight arrival', 'mytaxi-generatepress' ); ?></label>
 					<span class="mt-search__pair">
 						<input id="mt-search-date" type="date" data-search-date aria-label="<?php esc_attr_e( 'Arrival date', 'mytaxi-generatepress' ); ?>">
-						<input type="time" data-search-time aria-label="<?php esc_attr_e( 'Arrival time', 'mytaxi-generatepress' ); ?>">
+						<input id="mt-search-time" type="time" data-search-time aria-label="<?php esc_attr_e( 'Arrival time', 'mytaxi-generatepress' ); ?>">
 					</span>
 				</div>
 				<div class="mt-search__field mt-search__field--small">
 					<label for="mt-search-passengers"><?php esc_html_e( 'Passengers', 'mytaxi-generatepress' ); ?></label>
 					<select id="mt-search-passengers" data-search-passengers>
-						<?php for ( $count = 1; $count <= 8; $count++ ) : ?>
-							<option value="<?php echo esc_attr( (string) $count ); ?>"<?php selected( 2, $count ); ?>><?php echo esc_html( (string) $count ); ?></option>
+						<option value=""><?php esc_html_e( 'Choose', 'mytaxi-generatepress' ); ?></option>
+						<?php for ( $count = 1; $count <= $max; $count++ ) : ?>
+							<option value="<?php echo esc_attr( (string) $count ); ?>"><?php echo esc_html( (string) $count ); ?></option>
 						<?php endfor; ?>
 					</select>
 				</div>
 				<button type="submit" class="mt-btn mt-btn--navy mt-search__go"><?php esc_html_e( 'Search', 'mytaxi-generatepress' ); ?></button>
 			</form>
+			<div class="mt-direct mt-direct--search" data-search-direct hidden>
+				<p><?php esc_html_e( 'For transfers today, or more than 5 passengers, contact the team directly:', 'mytaxi-generatepress' ); ?></p>
+				<span class="mt-channels">
+					<a class="mt-btn mt-btn--yellow mt-channels__main" data-channel="whatsapp" href="#">WhatsApp</a>
+					<a class="mt-btn mt-btn--ghost" data-channel="viber" href="#">Viber</a>
+					<a class="mt-btn mt-btn--ghost" data-channel="phone" href="#"><?php esc_html_e( 'Call', 'mytaxi-generatepress' ); ?></a>
+				</span>
+			</div>
 		<?php endif; ?>
 
 		<?php mytaxi_trust_row(); ?>

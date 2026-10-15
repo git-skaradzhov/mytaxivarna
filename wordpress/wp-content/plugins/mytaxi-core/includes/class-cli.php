@@ -146,6 +146,64 @@ class Cli {
 			)
 		);
 		$check( 'confirmed price stays an offer', true === $sample_price['offer'] && str_contains( (string) $sample_price['text'], '45' ) );
+		$hidden = Price::present(
+			array(
+				'price'        => '45.00',
+				'price_type'   => 'fixed',
+				'price_basis'  => 'per_vehicle',
+				'price_sample' => '1',
+			)
+		);
+		$check( 'sample price reads as Price on request', 'Price on request' === $hidden['text'] && null === $hidden['amount'] && false === $hidden['offer'] );
+		$check( 'no published route shows a sample amount', ! array_filter( $routes, static function ( $post ) {
+			$data = Data::route( $post->ID );
+			return '1' === (string) get_post_meta( $post->ID, '_mytaxi_price_sample', true ) && ! empty( $data['price']['offer'] );
+		} ) );
+
+		$check( 'confirmed price with return totals both journeys', '€90' === ( Booking::quote( $sample_price, true )['lines'][2]['value'] ?? '' ) );
+		$one_way = Booking::quote( $sample_price, false );
+		$check( 'confirmed price without return is one line', 1 === count( $one_way['lines'] ) && $one_way['confirmed'] );
+		$asked = Booking::quote( $hidden, true );
+		$check( 'unconfirmed price with return shows no amount', ! $asked['confirmed'] && ! str_contains( wp_json_encode( $asked ), '€' ) && 'Return requested' === ( $asked['lines'][1]['value'] ?? '' ) );
+
+		// 21:30 UTC on 15 Oct is already 16 Oct in Sofia.
+		$now  = new \DateTimeImmutable( '2026-10-15 21:30', new \DateTimeZone( 'UTC' ) );
+		$trip = array(
+			'date'       => '2026-10-17',
+			'time'       => '10:00',
+			'passengers' => '2',
+		);
+		$errors = static function ( array $change ) use ( $trip, $now ) {
+			return Booking::journey_errors( array_merge( $trip, $change ), $now );
+		};
+		$check( 'today follows the Sofia calendar', '2026-10-16' === Booking::today( $now ) && '2026-10-17' === Booking::earliest( $now ) );
+		$check( 'tomorrow is accepted', array() === $errors( array() ) );
+		$check( 'today needs direct contact', array( 'date' => 'date_today' ) === $errors( array( 'date' => '2026-10-16' ) ) );
+		$check( 'a past date is rejected', array( 'date' => 'date_past' ) === $errors( array( 'date' => '2026-10-15' ) ) );
+		$check( 'a date beyond 18 months is rejected', array( 'date' => 'date_far' ) === $errors( array( 'date' => '2028-05-01' ) ) );
+		$check( 'an invalid date is rejected', array( 'date' => 'date_invalid' ) === $errors( array( 'date' => '2026-02-30' ) ) );
+		$check( 'an invalid time is rejected', array( 'time' => 'time_invalid' ) === $errors( array( 'time' => '25:00' ) ) );
+		$check(
+			'an empty journey names every missing field',
+			array(
+				'date'       => 'date_required',
+				'time'       => 'time_required',
+				'passengers' => 'passengers_required',
+			) === $errors( array( 'date' => '', 'time' => '', 'passengers' => '' ) )
+		);
+		$check( 'five passengers fit one car', array() === $errors( array( 'passengers' => '5' ) ) );
+		$check( 'six passengers need direct contact', array( 'passengers' => 'passengers_many' ) === $errors( array( 'passengers' => '6' ) ) );
+		$check(
+			'a requested return needs its date and time',
+			array(
+				'return_date' => 'return_date_required',
+				'return_time' => 'return_time_required',
+			) === $errors( array( 'return' => true ) )
+		);
+		$check( 'a return before the arrival is rejected', array( 'return_time' => 'return_order' ) === $errors( array( 'return' => true, 'return_date' => '2026-10-17', 'return_time' => '09:00' ) ) );
+		$check( 'a later return is accepted', array() === $errors( array( 'return' => true, 'return_date' => '2026-10-24', 'return_time' => '09:00' ) ) );
+		$check( 'an unrequested return is ignored', array() === $errors( array( 'return' => false, 'return_date' => '2026-10-01' ) ) );
+		$check( 'every error has a message', ! in_array( '', array_map( array( Booking::class, 'message' ), array_keys( Booking::messages() ) ), true ) );
 
 		$check( 'slug collision detects taxi-albena', Routing::conflicts( 'taxi-albena', 0 ) );
 		$check( 'own slug is not a collision', $albena && ! Routing::conflicts( 'taxi-albena', (int) $albena->ID ) );
@@ -209,6 +267,15 @@ class Cli {
 			$check( 'mail recipient comes from the service', '' !== $recipient && ( $mail['to'] ?? '' ) === $recipient );
 			$check( 'mail from is not the visitor', ! str_contains( $headers, 'From: Ana' ) && str_contains( $headers, 'Reply-To:' ) );
 			$check( 'repeat submit does not send a second email', ! empty( $again['ok'] ) && 1 === count( $captured ) );
+
+			add_filter( 'pre_wp_mail', $capture, 10, 2 );
+			$today = Booking::today() . 'T10:00';
+			$late  = Forms::inspect( self::payload( $varna ? (int) $varna->ID : 0, $route_id, array_merge( self::valid_fields(), array( 'mytaxi_datetime' => $today ) ) ) );
+			$crowd = Forms::inspect( self::payload( $varna ? (int) $varna->ID : 0, $route_id, array_merge( self::valid_fields(), array( 'mytaxi_passengers' => '6' ) ) ) );
+			remove_filter( 'pre_wp_mail', $capture, 10 );
+			$check( 'public handler sends a transfer today to direct contact', empty( $late['ok'] ) && 'date_today' === $late['code'] );
+			$check( 'public handler limits one car to 5 passengers', empty( $crowd['ok'] ) && 'passengers_many' === $crowd['code'] );
+			$check( 'rejected requests send no email', 1 === count( $captured ) );
 		} finally {
 			if ( $mail_probe && $varna ) {
 				update_post_meta( $varna->ID, '_mytaxi_email', $original_email );

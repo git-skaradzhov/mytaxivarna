@@ -196,7 +196,7 @@ class Meta {
 				'per_passenger'  => 'За пътник',
 			)
 		);
-		Fields::checkbox( 'mytaxi_price_sample', 'Примерна цена', '1' === (string) get_post_meta( $id, '_mytaxi_price_sample', true ), 'С отметка сайтът пише, че цената е примерна, и не я подава към Google. Махнете я, когато цената е потвърдена.' );
+		Fields::checkbox( 'mytaxi_price_sample', 'Примерна цена', '1' === (string) get_post_meta( $id, '_mytaxi_price_sample', true ), 'С отметка сумата не се показва публично: сайтът пише Price on request и не я подава към Google. Махнете отметката само когато цената е потвърдена от клиента.' );
 		Fields::end_section();
 
 		Fields::section( 'Пътуване', 'Показват се само попълнените редове.' );

@@ -1997,8 +1997,15 @@ body.mytaxi.mt-st .mt-header {
   min-height: 520px;
   padding: 72px 24px 56px;
   background: var(--mt-navy) center / cover no-repeat;
+  background-image: var(--mt-hero-sm, var(--mt-hero, none));
   color: #fff;
   scroll-margin-top: 64px;
+}
+
+@media (min-width: 769px) {
+  .mt-photo-hero {
+    background-image: var(--mt-hero, none);
+  }
 }
 
 .mt-photo-hero::before {
@@ -3087,6 +3094,14 @@ html.mt-js.is-request body.mytaxi .mt-photo-hero h1 {
   text-shadow: none;
 }
 
+body.mytaxi .mt-request-head__title {
+  margin: 0;
+  color: var(--mt-navy);
+  font-size: clamp(28px, 3vw, 34px);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+
 .mt-request-head p {
   margin: 6px 0 0;
   color: var(--mt-muted);
@@ -3307,4 +3322,283 @@ body.mytaxi .mt-summary__phone a {
   html.mt-js.is-request .mt-step-2 {
     padding: 20px 16px;
   }
+}
+
+.mt-route-about__grid {
+  display: grid;
+  gap: 24px;
+  align-items: start;
+}
+
+.mt-route-about .mt-prose p {
+  margin: 0 0 12px;
+}
+
+.mt-route-facts {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  padding: 4px 20px;
+  border: 1px solid var(--mt-line);
+  border-radius: 12px;
+  background: var(--mt-surface);
+}
+
+.mt-route-facts div {
+  display: grid;
+  grid-template-columns: minmax(110px, 38%) 1fr;
+  gap: 12px;
+  padding: 12px 0;
+  border-top: 1px solid var(--mt-line);
+}
+
+.mt-route-facts div:first-child {
+  border-top: 0;
+}
+
+.mt-route-facts dt {
+  font-weight: 600;
+  color: var(--mt-navy);
+}
+
+.mt-route-facts dd {
+  margin: 0;
+  color: var(--mt-muted);
+}
+
+@media (min-width: 860px) {
+  .mt-route-about__grid {
+    grid-template-columns: 1.2fr 1fr;
+    gap: 40px;
+  }
+}
+
+/* Journey errors, direct contact, and the price lines of the request summary. */
+
+.mt-field-error {
+  display: block;
+  margin-top: 4px;
+  color: #b42318;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 18px;
+}
+
+.mt-search__field:has(.mt-invalid),
+.mt-return-when:has(.mt-invalid) {
+  box-shadow: inset 0 0 0 2px #b42318;
+}
+
+form.wpcf7-form.mt-form .mt-step-2 .mt-invalid {
+  border-color: #b42318;
+}
+
+.mt-search__field:has(.mt-invalid):focus-within {
+  box-shadow: inset 0 0 0 2px #b42318, 0 0 0 3px rgba(255, 255, 255, 0.9);
+}
+
+.mt-direct {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px 14px;
+  margin: 14px 0 0;
+  color: #fff;
+  font-size: 15px;
+  text-shadow: 0 1px 2px rgba(8, 22, 34, 0.6);
+}
+
+.mt-direct[hidden] {
+  display: none;
+}
+
+.mt-direct p {
+  margin: 0;
+  font-weight: 600;
+}
+
+.mt-direct.is-highlighted,
+.mt-direct--search {
+  padding: 12px 16px;
+  border-left: 4px solid var(--mt-yellow);
+  border-radius: 8px;
+  background: rgba(10, 24, 36, 0.78);
+  text-shadow: none;
+}
+
+.mt-channels {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+body.mytaxi .mt-channels .mt-btn {
+  min-height: 44px;
+  padding: 0 16px;
+  font-size: 15px;
+}
+
+body.mytaxi .mt-summary__chat .mt-channels {
+  display: grid;
+  gap: 8px;
+}
+
+body.mytaxi .mt-summary__chat a.mt-btn--ghost {
+  border-color: var(--mt-line);
+  background: #fff;
+  color: var(--mt-navy);
+  text-shadow: none;
+}
+
+.mt-summary__quote {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.mt-summary__quote dl {
+  gap: 8px;
+}
+
+.mt-summary__quote dl div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: baseline;
+}
+
+.mt-summary__quote dd {
+  text-align: right;
+}
+
+.mt-summary__quote dl[data-confirmed] div:last-child dd {
+  color: var(--mt-yellow);
+  font-size: 20px;
+}
+
+.mt-summary__quote p {
+  margin: 10px 0 0;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 14px;
+  line-height: 20px;
+}
+
+html.mt-js [data-route-flow] .mt-step-1 .mt-search__label {
+  color: #44515d;
+}
+
+form.wpcf7-form.mt-form .mt-form__note--direct {
+  margin: 0 0 12px;
+  color: #fff;
+  font-weight: 600;
+}
+
+@media (max-width: 899px) {
+  html.mt-js.is-request .mt-summary__card {
+    padding: 16px;
+  }
+
+  html.mt-js.is-request .mt-summary__card > dl {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px 16px;
+  }
+
+  html.mt-js.is-request .mt-summary__route {
+    grid-column: 1 / -1;
+  }
+
+  body.mytaxi .mt-summary__card h2 {
+    margin-bottom: 10px;
+    font-size: 16px;
+  }
+
+  .mt-summary__edit {
+    min-height: 44px;
+    margin-top: 8px;
+  }
+}
+
+@media (max-width: 1023px) {
+  html.mt-js.is-request .mt-summary__chat {
+    display: none;
+  }
+}
+
+@media (max-width: 560px) {
+  .mt-direct {
+    justify-content: flex-start;
+    text-align: left;
+  }
+
+  .mt-channels {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  .mt-channels .mt-channels__main {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 1023px) {
+  html:has(body.mt-has-bar) {
+    scroll-padding-bottom: calc(var(--mt-bar) + 16px + env(safe-area-inset-bottom));
+  }
+}
+
+@media (max-width: 899px) {
+  form.wpcf7-form.mt-form .mt-search input:not([type="checkbox"]):not([type="submit"]),
+  form.wpcf7-form.mt-form .mt-search select,
+  form.wpcf7-form.mt-form .mt-return-when input:not([type="checkbox"]):not([type="submit"]),
+  .mt-search input,
+  .mt-search select {
+    height: 40px;
+    min-height: 40px;
+  }
+
+  html.mt-js.is-request .mt-summary__card {
+    position: relative;
+  }
+
+  html.mt-js.is-request .mt-summary__edit {
+    position: absolute;
+    top: 6px;
+    right: 12px;
+    margin: 0;
+    padding: 0 4px;
+  }
+
+  html.mt-js.is-request .mt-summary dd {
+    font-size: 14px;
+    line-height: 20px;
+  }
+
+  html.mt-js.is-request .mt-summary dt {
+    font-size: 11px;
+  }
+
+  html.mt-js.is-request .mt-summary__quote {
+    margin-top: 12px;
+    padding-top: 10px;
+  }
+
+  html.mt-js.is-request .mt-summary__quote dl {
+    gap: 4px;
+  }
+
+  html.mt-js.is-request .mt-summary__quote p {
+    margin-top: 6px;
+    font-size: 13px;
+    line-height: 18px;
+  }
+}
+
+/* Keep the policy link a separate touch target from the consent label. */
+form.wpcf7-form.mt-form .mt-accept .mt-privacy-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 8px;
 }

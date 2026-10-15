@@ -25,6 +25,19 @@ add_action( 'generate_header', 'mytaxi_header' );
 add_action( 'generate_footer', 'mytaxi_footer' );
 add_action( 'wp_footer', 'mytaxi_mobile_bar' );
 add_filter( 'body_class', 'mytaxi_body_class' );
+add_filter( 'mytaxi_og_image', 'mytaxi_og_image' );
+
+/**
+ * Share image when the record has no featured image: the JPEG of the page's hero photo.
+ *
+ * @return string
+ */
+function mytaxi_og_image() {
+	$slug = is_singular() ? (string) get_post_field( 'post_name', get_queried_object_id() ) : 'home';
+	$url  = is_singular( 'mytaxi_route' ) ? mytaxi_hero_photo( $slug ) : mytaxi_page_photo( $slug );
+	$jpg  = preg_replace( '/\.webp$/', '.jpg', $url );
+	return is_file( str_replace( get_stylesheet_directory_uri(), get_stylesheet_directory(), $jpg ) ) ? $jpg : $url;
+}
 
 /**
  * Mark pages that show the sticky service bar.
@@ -104,9 +117,9 @@ function mytaxi_nav_items() {
  * Logo used in the header and footer.
  */
 function mytaxi_brand() {
-	$src = get_stylesheet_directory_uri() . '/assets/images/logo.png';
+	$src = get_stylesheet_directory_uri() . '/assets/images/logo.webp';
 	echo '<a class="mt-brand" href="' . esc_url( home_url( '/' ) ) . '">';
-	echo '<img src="' . esc_url( $src ) . '" alt="' . esc_attr( get_bloginfo( 'name' ) ) . '" width="896" height="256">';
+	echo '<img src="' . esc_url( $src ) . '" alt="' . esc_attr( get_bloginfo( 'name' ) ) . '" width="448" height="128">';
 	echo '</a>';
 }
 
@@ -217,14 +230,6 @@ function mytaxi_mobile_bar() {
 	}
 	$service = mytaxi_current_service();
 	echo '<div class="mt-mobile-bar" data-mobile-bar>';
-	if ( is_singular( 'mytaxi_route' ) ) {
-		if ( $service && ! empty( $service['contacts']['whatsapp_url'] ) ) {
-			echo '<a class="mt-btn mt-btn--teal" href="' . esc_url( $service['contacts']['whatsapp_url'] ) . '">WhatsApp</a>';
-		}
-		echo '<a class="mt-btn mt-btn--yellow" href="#request"><span>' . esc_html__( 'Request', 'mytaxi-generatepress' ) . '</span></a>';
-		echo '</div>';
-		return;
-	}
 	if ( $service && ! empty( $service['contacts']['whatsapp_url'] ) ) {
 		echo '<a class="mt-btn mt-btn--yellow" href="' . esc_url( $service['contacts']['whatsapp_url'] ) . '">WhatsApp</a>';
 	}

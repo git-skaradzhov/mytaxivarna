@@ -79,7 +79,7 @@ if ( $airport ) {
 			'id'      => 'destinations',
 			'routes'  => $routes,
 			'heading' => sprintf( __( 'Destinations from %s', 'mytaxi-generatepress' ), $place ),
-			'text'    => mytaxi_routes_sample( $routes ) ? __( 'Sample prices for the car. The team confirms the price with you before the transfer.', 'mytaxi-generatepress' ) : __( 'Prices are for the car, not per person.', 'mytaxi-generatepress' ),
+			'text'    => __( 'Prices are for the car, not per person. Where no price is shown, the team quotes it on request.', 'mytaxi-generatepress' ),
 		)
 	);
 

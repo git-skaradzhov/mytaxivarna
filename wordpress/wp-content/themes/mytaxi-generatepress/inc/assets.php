@@ -26,6 +26,9 @@ add_action(
 			file_exists( $js ) ? (string) filemtime( $js ) : '1.0.0',
 			true
 		);
+		if ( class_exists( '\MyTaxi\Core\Booking' ) ) {
+			wp_localize_script( 'mytaxi-front', 'mytaxiBooking', \MyTaxi\Core\Booking::client_rules() );
+		}
 	},
 	20
 );

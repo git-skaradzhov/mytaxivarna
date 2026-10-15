@@ -14,7 +14,7 @@ $service = (array) ( $args['service'] ?? array() );
 $actions = (array) ( $args['actions'] ?? array() );
 $phone   = (string) ( $service['contacts']['phone'] ?? '' );
 ?>
-<section class="mt-photo-hero mt-photo-hero--page<?php echo ! empty( $args['compact'] ) ? ' mt-photo-hero--compact' : ''; ?>"<?php echo $photo ? ' style="background-image:url(' . esc_url( $photo ) . ')"' : ''; ?>>
+<section class="mt-photo-hero mt-photo-hero--page<?php echo ! empty( $args['compact'] ) ? ' mt-photo-hero--compact' : ''; ?>"<?php echo mytaxi_hero_style( $photo ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
 	<div class="mt-photo-hero__inner">
 		<?php mytaxi_breadcrumbs(); ?>
 		<?php if ( ! empty( $args['kicker'] ) ) : ?>

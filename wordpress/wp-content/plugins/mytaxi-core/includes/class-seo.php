@@ -356,8 +356,8 @@ class Seo {
 			$route = Data::route( get_the_ID() );
 			return trim( (string) ( $route[ $key ] ?? '' ) );
 		}
-		if ( is_front_page() ) {
-			return 'meta_desc' === $key ? trim( (string) get_the_excerpt() ) : '';
+		if ( is_page() ) {
+			return 'meta_desc' === $key ? trim( (string) get_post_field( 'post_excerpt', get_queried_object_id() ) ) : '';
 		}
 		return '';
 	}
@@ -403,11 +403,8 @@ class Seo {
 		} else {
 			$id = (int) get_post_thumbnail_id();
 		}
-		if ( ! $id ) {
-			return '';
-		}
-		$image = wp_get_attachment_image_url( $id, 'large' );
-		return $image ? $image : '';
+		$image = $id ? wp_get_attachment_image_url( $id, 'full' ) : '';
+		return $image ? $image : (string) apply_filters( 'mytaxi_og_image', '' );
 	}
 
 	/**

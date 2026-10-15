@@ -14,7 +14,7 @@ defined( 'ABSPATH' ) || exit;
  */
 class ContactForm {
 
-	const REVISION = '10';
+	const REVISION = '14';
 
 	/**
 	 * Context of the submission currently being mailed.
@@ -35,6 +35,7 @@ class ContactForm {
 	 */
 	public static function boot() {
 		add_action( 'init', array( __CLASS__, 'ensure' ), 30 );
+		add_action( 'wpcf7_swv_create_schema', array( __CLASS__, 'validation_messages' ), 5, 2 );
 		add_filter( 'wpcf7_mail_components', array( __CLASS__, 'mail_components' ), 10, 2 );
 		add_filter( 'wpcf7_special_mail_tags', array( __CLASS__, 'mail_tags' ), 10, 3 );
 		add_action( 'wpcf7_before_send_mail', array( __CLASS__, 'before_send' ), 10, 3 );
@@ -49,6 +50,31 @@ class ContactForm {
 		add_filter( 'wpcf7_validate_text', array( __CLASS__, 'validate_child_age' ), 20, 2 );
 		add_filter( 'wpcf7_validate_date', array( __CLASS__, 'validate_date' ), 20, 2 );
 		add_filter( 'wpcf7_validate_date*', array( __CLASS__, 'validate_date' ), 20, 2 );
+		add_filter( 'wpcf7_validate', array( __CLASS__, 'validate_journey' ), 20, 2 );
+	}
+
+	/**
+	 * Add specific messages before CF7's defaults, for both browser and server.
+	 * Existing rules remain in place; the first failed rule supplies the message.
+	 */
+	public static function validation_messages( $schema, $contact_form ) {
+		if ( ! self::is_ours( $contact_form ) || (int) $contact_form->id() !== (int) get_option( 'mytaxi_cf7_airport_id', 0 ) ) {
+			return;
+		}
+		$messages = array(
+			'mytaxi-name'  => __( 'Enter your full name.', 'mytaxi-core' ),
+			'mytaxi-phone' => __( 'Enter a phone number including the country code.', 'mytaxi-core' ),
+			'mytaxi-email' => __( 'Enter your email address so we can reply.', 'mytaxi-core' ),
+			'mytaxi-hotel' => __( 'Enter your hotel name or drop-off address.', 'mytaxi-core' ),
+		);
+		foreach ( $messages as $field => $message ) {
+			$schema->add_rule( wpcf7_swv_create_rule( 'required', array( 'field' => $field, 'error' => $message ) ) );
+		}
+		$schema->add_rule( wpcf7_swv_create_rule( 'enum', array(
+			'field'  => 'mytaxi-passengers',
+			'accept' => array_map( 'strval', range( 1, Booking::MAX_PASSENGERS ) ),
+			'error'  => __( 'Choose 1–5 passengers. For larger groups, please contact us on WhatsApp or call.', 'mytaxi-core' ),
+		) ) );
 	}
 
 	/**
@@ -363,7 +389,7 @@ class ContactForm {
 	}
 
 	/**
-	 * Require HH:MM when a time is entered.
+	 * Local taxi form: require HH:MM when a time is entered. The airport form uses Booking.
 	 *
 	 * @param \WPCF7_Validation $result Result.
 	 * @param \WPCF7_FormTag    $tag Tag.
@@ -371,24 +397,18 @@ class ContactForm {
 	 */
 	public static function validate_time( $result, $tag ) {
 		$name = is_object( $tag ) ? (string) $tag->name : '';
-		if ( ! in_array( $name, array( 'mytaxi-time', 'mytaxi-return-time' ), true ) ) {
+		if ( 'mytaxi-time' !== $name || self::is_airport_submission() ) {
 			return $result;
 		}
 		$value = self::posted_scalar( $name );
-		if ( 'mytaxi-return-time' === $name && self::return_requested() && '' === $value ) {
-			$result->invalidate( $tag, __( 'Enter the return time.', 'mytaxi-core' ) );
-			return $result;
-		}
 		if ( '' !== $value && ! preg_match( '/^(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$/', $value ) ) {
 			$result->invalidate( $tag, __( 'Enter the time as HH:MM.', 'mytaxi-core' ) );
-			return $result;
 		}
-		self::invalidate_return_order( $result, $tag );
 		return $result;
 	}
 
 	/**
-	 * Keep the date inside the booking window.
+	 * Local taxi form: keep the date inside the booking window. Today is allowed for a local taxi.
 	 *
 	 * @param \WPCF7_Validation $result Result.
 	 * @param \WPCF7_FormTag    $tag Tag.
@@ -396,17 +416,10 @@ class ContactForm {
 	 */
 	public static function validate_date( $result, $tag ) {
 		$name = is_object( $tag ) ? (string) $tag->name : '';
-		if ( ! in_array( $name, array( 'mytaxi-date', 'mytaxi-return-date' ), true ) ) {
+		if ( 'mytaxi-date' !== $name || self::is_airport_submission() ) {
 			return $result;
 		}
 		$value = self::posted_scalar( $name );
-		if ( 'mytaxi-return-date' === $name && ! self::return_requested() ) {
-			return $result;
-		}
-		if ( 'mytaxi-return-date' === $name && '' === $value ) {
-			$result->invalidate( $tag, __( 'Enter the return date.', 'mytaxi-core' ) );
-			return $result;
-		}
 		if ( '' === $value ) {
 			return $result;
 		}
@@ -415,10 +428,71 @@ class ContactForm {
 		$now  = new \DateTimeImmutable( 'today', $zone );
 		if ( ! $date || $date->format( 'Y-m-d' ) !== $value || $date < $now->modify( '-1 day' ) || $date > $now->modify( '+18 months' ) ) {
 			$result->invalidate( $tag, __( 'Enter a date for the journey.', 'mytaxi-core' ) );
+		}
+		return $result;
+	}
+
+	/**
+	 * Airport journey rules from Booking: the same rules and messages the browser uses.
+	 *
+	 * @param \WPCF7_Validation        $result Result.
+	 * @param array<int,\WPCF7_FormTag> $tags Form tags.
+	 * @return \WPCF7_Validation
+	 */
+	public static function validate_journey( $result, $tags ) {
+		if ( ! self::is_airport_submission() ) {
 			return $result;
 		}
-		self::invalidate_return_order( $result, $tag );
+		$names  = self::journey_fields();
+		$errors = Booking::journey_errors( self::posted_journey() );
+		foreach ( (array) $tags as $tag ) {
+			$name = is_object( $tag ) ? (string) $tag->name : '';
+			$key  = array_search( $name, $names, true );
+			if ( false !== $key && isset( $errors[ $key ] ) ) {
+				$result->invalidate( $tag, Booking::message( $errors[ $key ] ) );
+			}
+		}
 		return $result;
+	}
+
+	/**
+	 * Booking keys and the airport form fields that carry them.
+	 *
+	 * @return array<string,string>
+	 */
+	private static function journey_fields() {
+		return array(
+			'origin'      => 'mytaxi-origin',
+			'destination' => 'mytaxi-destination',
+			'date'        => 'mytaxi-date',
+			'time'        => 'mytaxi-time',
+			'passengers'  => 'mytaxi-passengers',
+			'return_date' => 'mytaxi-return-date',
+			'return_time' => 'mytaxi-return-time',
+		);
+	}
+
+	/**
+	 * The submitted journey in Booking's shape.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private static function posted_journey() {
+		$journey = array( 'return' => self::return_requested() );
+		foreach ( self::journey_fields() as $key => $name ) {
+			$journey[ $key ] = self::posted_scalar( $name );
+		}
+		return $journey;
+	}
+
+	/**
+	 * Whether Contact Form 7 is processing the airport form.
+	 *
+	 * @return bool
+	 */
+	private static function is_airport_submission() {
+		$form = class_exists( '\WPCF7_ContactForm' ) ? \WPCF7_ContactForm::get_current() : null;
+		return $form && (int) $form->id() === (int) get_option( 'mytaxi_cf7_airport_id', 0 );
 	}
 
 	/**
@@ -474,39 +548,6 @@ class ContactForm {
 	}
 
 	/**
-	 * The return has to be after the outward arrival.
-	 *
-	 * @param \WPCF7_Validation $result Result.
-	 * @param \WPCF7_FormTag    $tag Tag.
-	 */
-	private static function invalidate_return_order( $result, $tag ) {
-		if ( ! self::return_requested() ) {
-			return;
-		}
-		$out = self::sofia_moment( self::posted_scalar( 'mytaxi-date' ), self::posted_scalar( 'mytaxi-time' ) );
-		$back = self::sofia_moment( self::posted_scalar( 'mytaxi-return-date' ), self::posted_scalar( 'mytaxi-return-time' ) );
-		if ( ! $out || ! $back || $back > $out ) {
-			return;
-		}
-		$result->invalidate( $tag, __( 'The return must be after the flight arrival.', 'mytaxi-core' ) );
-	}
-
-	/**
-	 * Europe/Sofia moment from a date and time, or null when either is incomplete.
-	 *
-	 * @param string $date Y-m-d.
-	 * @param string $time HH:MM.
-	 * @return \DateTimeImmutable|null
-	 */
-	private static function sofia_moment( $date, $time ) {
-		if ( ! preg_match( '/^\d{4}-\d{2}-\d{2}$/', $date ) || ! preg_match( '/^(?:[01]\d|2[0-3]):[0-5]\d/', $time ) ) {
-			return null;
-		}
-		$moment = \DateTimeImmutable::createFromFormat( 'Y-m-d H:i', $date . ' ' . substr( $time, 0, 5 ), new \DateTimeZone( 'Europe/Sofia' ) );
-		return $moment ?: null;
-	}
-
-	/**
 	 * Server-side journey rules for the airport form.
 	 *
 	 * @param \WPCF7_ContactForm $contact_form Form.
@@ -516,19 +557,12 @@ class ContactForm {
 		if ( (int) $contact_form->id() !== (int) get_option( 'mytaxi_cf7_airport_id', 0 ) ) {
 			return '';
 		}
-		$passengers = self::posted_scalar( 'mytaxi-passengers' );
-		if ( ! preg_match( '/^(?:[1-8])$/', $passengers ) ) {
-			return __( 'The request was not sent. Choose the number of passengers.', 'mytaxi-core' );
+		$errors = Booking::journey_errors( self::posted_journey() );
+		if ( $errors ) {
+			return Booking::message( (string) reset( $errors ) );
 		}
 		if ( '' === self::posted_scalar( 'mytaxi-hotel' ) ) {
 			return __( 'The request was not sent. Enter the hotel or drop-off address.', 'mytaxi-core' );
-		}
-		if ( self::return_requested() ) {
-			$out  = self::sofia_moment( self::posted_scalar( 'mytaxi-date' ), self::posted_scalar( 'mytaxi-time' ) );
-			$back = self::sofia_moment( self::posted_scalar( 'mytaxi-return-date' ), self::posted_scalar( 'mytaxi-return-time' ) );
-			if ( ! $out || ! $back || $back <= $out ) {
-				return __( 'The request was not sent. The return must be after the flight arrival.', 'mytaxi-core' );
-			}
 		}
 		if ( 'Yes' === self::posted_scalar( 'mytaxi-child-seat' ) && ! preg_match( '/^(?:1[0-7]|[0-9])$/', self::posted_scalar( 'mytaxi-child-age' ) ) ) {
 			return __( 'The request was not sent. Enter the child’s age.', 'mytaxi-core' );
@@ -561,7 +595,7 @@ class ContactForm {
 		}
 
 		$properties['form']                 = $markup;
-		$properties['additional_settings']  = '';
+		$properties['additional_settings']  = 'acceptance_as_validation: on';
 		$properties['mail']['active']       = true;
 		$properties['mail']['recipient']    = self::recipient();
 		$properties['mail']['sender']       = sprintf( '%s <%s>', $from_name, $from );
@@ -570,7 +604,7 @@ class ContactForm {
 		$properties['mail']['additional_headers'] = '';
 		$properties['mail']['attachments']  = '';
 		$properties['mail']['use_html']     = false;
-		$properties['messages']['mail_sent_ok']     = __( 'Your request has been sent. It is not a confirmed booking. The team will contact you to agree the next step.', 'mytaxi-core' );
+		$properties['messages']['mail_sent_ok']     = __( 'Thank you. Your request has been sent. Your booking is confirmed after we agree the price and receive a passenger name and flight number.', 'mytaxi-core' );
 		$properties['messages']['mail_sent_ng']     = __( 'We couldn’t send your request. Please try again, or use WhatsApp or call this service.', 'mytaxi-core' );
 		$properties['messages']['validation_error'] = __( 'The request was not sent. Correct the fields below.', 'mytaxi-core' );
 		$properties['messages']['accept_terms']     = __( 'Please confirm that you have read the Privacy Policy.', 'mytaxi-core' );
@@ -594,14 +628,14 @@ class ContactForm {
 				'<p class="mt-hp" aria-hidden="true"><label> Company [text mytaxi-company autocomplete:off]</label></p>',
 				'<div class="mt-step mt-step-1">',
 				'<div class="mt-search mt-search--route">',
-				'<p class="mt-search__field"><label><span class="mt-search__label">Arrival airport</span> [text* mytaxi-origin autocomplete:off placeholder "Pickup"]</label></p>',
-				'<p class="mt-search__field"><label><span class="mt-search__label">Going to</span> [text* mytaxi-destination autocomplete:off placeholder "Destination"]</label></p>',
-				'<div class="mt-search__field mt-search__field--when"><span class="mt-search__label">Flight arrival</span><span class="mt-search__pair">[date* mytaxi-date class:mt-picker min:yesterday max:+18_months autocomplete:off] [text* mytaxi-time class:mt-picker class:mt-picker--time autocomplete:off]</span></div>',
+				'<p class="mt-search__field"><label><span class="mt-search__label">Arrival airport</span> [text mytaxi-origin autocomplete:off placeholder "Pickup"]</label></p>',
+				'<p class="mt-search__field"><label><span class="mt-search__label">Going to</span> [text mytaxi-destination autocomplete:off placeholder "Destination"]</label></p>',
+				'<div class="mt-search__field mt-search__field--when"><span class="mt-search__label">Flight arrival</span><span class="mt-search__pair">[date mytaxi-date class:mt-picker autocomplete:off] [text mytaxi-time class:mt-picker class:mt-picker--time autocomplete:off]</span></div>',
 				'<div class="mt-search__field mt-search__field--return"><span class="mt-search__label">Return</span>[checkbox mytaxi-return use_label_element "Add a return"]</div>',
-				'<p class="mt-search__field mt-search__field--small"><label><span class="mt-search__label">Passengers</span> [select* mytaxi-passengers first_as_label "Choose" "1" "2" "3" "4" "5" "6" "7" "8"]</label></p>',
+				'<p class="mt-search__field mt-search__field--small"><label><span class="mt-search__label">Passengers</span> [select mytaxi-passengers first_as_label "Choose" "1" "2" "3" "4" "5"]</label></p>',
 				'<p class="mt-search__action"><button type="button" class="mt-btn mt-btn--navy mt-continue">Continue</button></p>',
 				'</div>',
-				'<div class="mt-return-when" hidden><span class="mt-search__label">Return pickup</span><span class="mt-search__pair">[date mytaxi-return-date class:mt-picker min:yesterday max:+18_months autocomplete:off] [text mytaxi-return-time class:mt-picker class:mt-picker--time autocomplete:off]</span></div>',
+				'<div class="mt-return-when" hidden><span class="mt-search__label">Return pickup</span><span class="mt-search__pair">[date mytaxi-return-date class:mt-picker autocomplete:off] [text mytaxi-return-time class:mt-picker class:mt-picker--time autocomplete:off]</span></div>',
 				'</div>',
 				'<div class="mt-step mt-step-2">',
 				'<h2>Contact details</h2>',
@@ -611,7 +645,7 @@ class ContactForm {
 				'</div>',
 				'<div class="mt-pair">',
 				'<p class="mt-field"><label><span class="mt-label">Email *</span> [email* mytaxi-email autocomplete:email placeholder "name@example.com"]</label></p>',
-				'<p class="mt-field"><label><span class="mt-label">Flight number</span> [text mytaxi-flight maxlength:20 placeholder "Needed before the pickup"]</label></p>',
+				'<p class="mt-field"><label><span class="mt-label">Flight number</span> [text mytaxi-flight maxlength:20 placeholder "Needed to confirm the booking"]</label></p>',
 				'</div>',
 				'<p class="mt-field"><label><span class="mt-label">Hotel / drop-off address *</span> [text* mytaxi-hotel maxlength:160 placeholder "Hotel name or address"]</label></p>',
 				'<h2>Travel requirements</h2>',
@@ -621,9 +655,9 @@ class ContactForm {
 				'</div>',
 				'<p class="mt-field mt-child-age" hidden><label><span class="mt-label">Child’s age *</span> [text mytaxi-child-age maxlength:2 placeholder "Age in years"]</label></p>',
 				'<p class="mt-field"><label><span class="mt-label">Additional requirements</span> [textarea mytaxi-notes rows:3 maxlength:2000 placeholder "Anything else we should plan for"]</label></p>',
-				'<p class="mt-field mt-accept"><label><span class="mt-accept__control">[acceptance privacy]</span> <span>I have read the <a href="/privacy-policy/">Privacy Policy</a>.</span></label></p>',
+				'<div class="mt-field mt-accept"><label><span class="mt-accept__control">[acceptance privacy]</span> <span>I have read the Privacy Policy.</span></label> <a class="mt-privacy-link" href="/privacy-policy/">Privacy Policy</a></div>',
 				'<p class="mt-field">[submit class:mt-btn class:mt-btn--yellow "Send transfer request"]</p>',
-				'<p class="mt-form__note">Sending a request does not confirm a reservation. The team will agree your quote and confirm the details with you. The flight number can follow the first enquiry, and it is needed before the airport pickup.</p>',
+				'<p class="mt-form__note">This form sends a request. Your booking is confirmed after we agree the price and receive a passenger name and flight number. You can send the flight number later.</p>',
 				'</div>',
 			)
 		);
@@ -655,7 +689,7 @@ class ContactForm {
 				'<div class="mt-field mt-check">[checkbox mytaxi-child-seat use_label_element "Free child seat"]</div>',
 				'<p class="mt-field mt-child-age" hidden><label><span class="mt-sr">Child age</span> [text mytaxi-child-age maxlength:80 placeholder "Child’s age"]</label></p>',
 				'<p class="mt-field"><label><span class="mt-sr">Notes</span> [textarea mytaxi-notes rows:2 maxlength:2000 placeholder "Luggage or anything else"]</label></p>',
-				'<p class="mt-field mt-accept"><label><span class="mt-accept__control">[acceptance privacy]</span> <span>I have read the <a href="/privacy-policy/">Privacy Policy</a>.</span></label></p>',
+				'<div class="mt-field mt-accept"><label><span class="mt-accept__control">[acceptance privacy]</span> <span>I have read the Privacy Policy.</span></label> <a class="mt-privacy-link" href="/privacy-policy/">Privacy Policy</a></div>',
 				'<p class="mt-field">[submit class:mt-btn class:mt-btn--yellow "Send request"]</p>',
 				'<p class="mt-form__note">This sends a request. The team confirms the car with you.</p>',
 			)
@@ -690,7 +724,7 @@ class ContactForm {
 			$lines[] = 'Flight number: [mytaxi-flight]';
 			$lines[] = 'Hotel / drop-off: [mytaxi-hotel]';
 			$lines[] = 'Luggage: [mytaxi-luggage]';
-			$lines[] = 'Published price: [_mytaxi_price]';
+			$lines[] = 'Price shown on the site: [_mytaxi_price]';
 		}
 		$lines[] = 'Child seat requested: [mytaxi-child-seat]';
 		$lines[] = 'Child age: [mytaxi-child-age]';
@@ -709,8 +743,8 @@ class ContactForm {
 	 */
 	private static function offer_direct_contact( $service_id ) {
 		$contacts = Contacts::for_service( (int) $service_id );
-		echo '<p class="mt-form__note">' . esc_html__( 'Send your request by WhatsApp or call this service.', 'mytaxi-core' ) . '</p>';
-		echo '<div class="mt-actions">';
+		echo '<p class="mt-form__note mt-form__note--direct">' . esc_html__( 'Online requests are not open yet. Send your transfer details by WhatsApp or Viber, or call us. We answer 24/7.', 'mytaxi-core' ) . '</p>';
+		echo '<div class="mt-actions mt-actions--direct">';
 		if ( ! empty( $contacts['whatsapp_url'] ) ) {
 			echo '<a class="mt-btn mt-btn--yellow" href="' . esc_url( $contacts['whatsapp_url'] ) . '">WhatsApp</a>';
 		}
@@ -809,12 +843,20 @@ class ContactForm {
 		}
 
 		$route = Data::route( $post->ID );
+		$quote = Booking::quote( (array) ( $route['price'] ?? array() ), self::return_requested() );
+		$price = array();
+		foreach ( $quote['lines'] as $line ) {
+			$price[] = $line['label'] . ': ' . $line['value'];
+		}
+		if ( '' !== $quote['note'] ) {
+			$price[] = $quote['note'];
+		}
 		return array(
 			'service' => get_the_title( $service ),
 			'route'   => get_the_title( $post ),
 			'page'    => (string) get_permalink( $post ),
 			'subject' => get_the_title( $post ),
-			'price'   => (string) ( $route['price']['text'] ?? '' ),
+			'price'   => implode( '; ', $price ),
 		);
 	}
 

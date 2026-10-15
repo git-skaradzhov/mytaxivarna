@@ -15,15 +15,18 @@ defined( 'ABSPATH' ) || exit;
 class Price {
 
 	/**
-	 * Present a route price.
+	 * Present a route price. A sample amount is never public: it reads as Price on request.
 	 *
-	 * @param array<string,mixed> $meta Route meta.
+	 * @param array<string,mixed> $meta Route meta. price_sample = '1' marks an unconfirmed amount.
 	 * @return array<string,mixed>
 	 */
 	public static function present( array $meta ) {
 		$type   = isset( $meta['price_type'] ) ? (string) $meta['price_type'] : 'on_request';
 		$basis  = isset( $meta['price_basis'] ) ? (string) $meta['price_basis'] : '';
 		$amount = Fields::price( isset( $meta['price'] ) ? (string) $meta['price'] : '' );
+		if ( '1' === (string) ( $meta['price_sample'] ?? '' ) ) {
+			$amount = '';
+		}
 
 		if ( ! in_array( $type, array( 'fixed', 'from', 'on_request' ), true ) ) {
 			$type = 'on_request';
